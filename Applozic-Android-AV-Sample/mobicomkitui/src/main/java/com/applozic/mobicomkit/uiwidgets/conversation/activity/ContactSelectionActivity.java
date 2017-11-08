@@ -141,7 +141,6 @@ public class ContactSelectionActivity extends AppCompatActivity implements Searc
             searchItem.collapseActionView();
         }
         searchView.setOnQueryTextListener(this);
-        searchView.setSubmitButtonEnabled(true);
         searchView.setIconified(true);
         return super.onCreateOptionsMenu(menu);
     }

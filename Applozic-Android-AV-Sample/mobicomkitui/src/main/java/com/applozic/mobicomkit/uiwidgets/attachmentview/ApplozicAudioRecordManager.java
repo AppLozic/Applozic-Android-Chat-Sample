@@ -18,12 +18,14 @@ public class ApplozicAudioRecordManager implements MediaRecorder.OnInfoListener,
 
     FragmentActivity context;
     String audioFileName, timeStamp;
+    ConversationUIService conversationUIService;
     private MediaRecorder audioRecorder;
     private String outputFile = null;
     private boolean isRecordring;
 
 
     public ApplozicAudioRecordManager(FragmentActivity context) {
+        this.conversationUIService  = new ConversationUIService(context);
         this.context = context;
     }
 
@@ -64,10 +66,12 @@ public class ApplozicAudioRecordManager implements MediaRecorder.OnInfoListener,
             ApplozicAudioRecordManager.this.stopRecording();
         }
 
-        File file = new File(outputFile);
-        if (file != null) {
-            Utils.printLog(context, "AudioFRG:", "File deleted...");
-            file.delete();
+        if(outputFile != null){
+            File file = new File(outputFile);
+            if (file != null && file.exists()) {
+                Utils.printLog(context, "AudioFRG:", "File deleted...");
+                file.delete();
+            }
         }
 
     }
@@ -80,13 +84,14 @@ public class ApplozicAudioRecordManager implements MediaRecorder.OnInfoListener,
         }
 
         //FILE CHECK ....
-        if (!(new File(outputFile).exists())) {
-            Toast.makeText(context, R.string.tap_on_mic_button_to_record_audio, Toast.LENGTH_SHORT).show();
-            return;
-        }
-        ConversationUIService conversationUIService = new ConversationUIService(context);
-        conversationUIService.sendAudioMessage(outputFile);
 
+        if(outputFile != null){
+            if (!(new File(outputFile).exists())) {
+                Toast.makeText(context, R.string.tap_on_mic_button_to_record_audio, Toast.LENGTH_SHORT).show();
+                return;
+            }
+            conversationUIService.sendAudioMessage(outputFile);
+        }
 
     }
 

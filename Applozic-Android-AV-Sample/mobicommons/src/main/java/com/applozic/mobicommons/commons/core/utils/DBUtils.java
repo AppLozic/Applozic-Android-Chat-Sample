@@ -25,9 +25,10 @@ public class DBUtils {
     }
 
     public static boolean existsColumnInTable(SQLiteDatabase inDatabase, String inTable, String columnToCheck) {
+        Cursor mCursor = null;
         try {
             //query 1 row
-            Cursor mCursor = inDatabase.rawQuery("SELECT * FROM " + inTable + " LIMIT 0", null);
+            mCursor = inDatabase.rawQuery("SELECT * FROM " + inTable + " LIMIT 0", null);
 
             //getColumnIndex gives us the index (0 to ...) of the column - otherwise we get a -1
             return mCursor.getColumnIndex(columnToCheck) != -1;
@@ -36,6 +37,10 @@ public class DBUtils {
             exp.printStackTrace();
             Log.e(TAG, "... - existsColumnInTable, when checking whether a column exists in the table, an error occurred: " + exp.getMessage());
             return false;
+        } finally {
+            if (mCursor != null) {
+                mCursor.close();
+            }
         }
     }
 

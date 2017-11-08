@@ -223,7 +223,7 @@ public class MobiComAttachmentSelectorActivity extends AppCompatActivity {
             if(selectedFileUri != null) {
                 String fileName = null;
                 try {
-                    int maxFileSize = alCustomizationSettings.getMaxAttachmentSizeAllowed() * 1024 * 1024;
+                    long maxFileSize = alCustomizationSettings.getMaxAttachmentSizeAllowed() * 1024 * 1024;
                     Cursor returnCursor =
                             getContentResolver().query(selectedFileUri, null, null, null, null);
                     if (returnCursor != null) {

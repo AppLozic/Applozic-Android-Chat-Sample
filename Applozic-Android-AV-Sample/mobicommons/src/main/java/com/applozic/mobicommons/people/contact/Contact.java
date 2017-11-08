@@ -26,10 +26,10 @@ public class Contact extends JsonMarker {
     @Expose
     private String lastName = "";
     @Expose
-    @SerializedName("emailId")
+    @SerializedName("emailIdList")
     private List<String> emailIds;
     @Expose
-    @SerializedName("contactNumber")
+    @SerializedName("contactNumberList")
     private List<String> contactNumbers = new ArrayList<String>();
     private Map<String, String> phoneNumbers;
     private String contactNumber;

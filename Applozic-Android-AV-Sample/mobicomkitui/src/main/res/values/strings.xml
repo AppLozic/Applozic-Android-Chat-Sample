@@ -34,6 +34,7 @@
     <string name="applozic_user_already_in_a_group">Already added to the [groupType]</string>
     <string name="applozic_contacts_loading_info">Loading please wait...</string>
     <string name="applozic_contacts_loading_error">You need to have network access for loading contacts</string>
+    <string name="applozic_enter_group_name">Please enter a group name to proceed..</string>
 
 
     <!--

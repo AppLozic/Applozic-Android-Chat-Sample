@@ -252,6 +252,9 @@ public class ChannelDatabaseService {
                 channelList.add(getChannel(cursor));
             } while (cursor.moveToNext());
         }
+        if (cursor != null) {
+            cursor.close();
+        }
         return channelList;
     }
 
@@ -295,15 +298,22 @@ public class ChannelDatabaseService {
 
     public boolean isChannelUserPresent(Integer channelKey, String userId) {
         SQLiteDatabase database = dbHelper.getWritableDatabase();
-        Cursor cursor = database.rawQuery(
-                "SELECT COUNT(*) FROM channel_User_X WHERE " + MobiComDatabaseHelper.CHANNEL_KEY + "=? and " + MobiComDatabaseHelper.USERID + "=?",
-                new String[]{String.valueOf(channelKey), String.valueOf(userId)});
-        cursor.moveToFirst();
-        boolean present = cursor.getInt(0) > 0;
-        if (cursor != null) {
-            cursor.close();
+        Cursor cursor = null;
+        boolean present = false;
+        try {
+            cursor = database.rawQuery(
+                    "SELECT COUNT(*) FROM channel_User_X WHERE " + MobiComDatabaseHelper.CHANNEL_KEY + "=? and " + MobiComDatabaseHelper.USERID + "=?",
+                    new String[]{String.valueOf(channelKey), String.valueOf(userId)});
+            cursor.moveToFirst();
+            present = cursor.getInt(0) > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+                dbHelper.close();
+            }
         }
-        dbHelper.close();
         return present;
     }
 

@@ -22,6 +22,7 @@ import com.applozic.mobicomkit.sync.SyncChannelFeed;
 import com.applozic.mobicommons.people.channel.Channel;
 import com.applozic.mobicommons.people.channel.ChannelUserMapper;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -538,7 +539,7 @@ public class ChannelService {
     public boolean addMemberToContactGroup(String contactGroupId, String groupType, List<String> contactGroupMemberList) {
 
         ApiResponse apiResponse = null;
-        if(!TextUtils.isEmpty(contactGroupId) && contactGroupMemberList!=null) {
+        if (!TextUtils.isEmpty(contactGroupId) && contactGroupMemberList != null) {
             if (!TextUtils.isEmpty(groupType)) {
                 apiResponse = channelClientService.addMemberToContactGroupOfType(contactGroupId, groupType, contactGroupMemberList);
 
@@ -555,7 +556,7 @@ public class ChannelService {
 
     public ChannelFeed getMembersFromContactGroup(String contactGroupId, String groupType) {
         ChannelFeed channelFeed = null;
-        if(!TextUtils.isEmpty(contactGroupId)) {
+        if (!TextUtils.isEmpty(contactGroupId)) {
             if (!TextUtils.isEmpty(groupType)) {
                 channelFeed = channelClientService.getMembersFromContactGroupOfType(contactGroupId, groupType);
             } else {
@@ -569,6 +570,19 @@ public class ChannelService {
             UserService.getInstance(context).processUserDetails(channelFeed.getContactGroupMembersId());
             return channelFeed;
         }
+        return null;
+    }
+
+    public ChannelFeed[] getMembersFromContactGroupList(List<String> groupIdList, List<String> groupNames, String groupType) {
+        List<ChannelFeed> channelFeedList;
+
+        ChannelFeedListResponse channelFeedListResponse = channelClientService.getMemebersFromContactGroupIds(groupIdList, groupNames, groupType);
+        if (channelFeedListResponse != null && channelFeedListResponse.getStatus().equals(ChannelFeedListResponse.SUCCESS)) {
+            channelFeedList = channelFeedListResponse.getResponse();
+            processChannelFeedList(channelFeedList.toArray(new ChannelFeed[channelFeedList.size()]), false);
+            return channelFeedList.toArray(new ChannelFeed[channelFeedList.size()]);
+        }
+
         return null;
     }
 

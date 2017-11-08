@@ -438,7 +438,11 @@ public class ContactSelectionFragment extends ListFragment implements SearchList
                     if (!TextUtils.isEmpty(imageUrl)) {
                         channelInfo.setImageUrl(imageUrl);
                     }
-                    channelInfo.setType(groupType);
+                    if (alCustomizationSettings != null) {
+                        channelInfo.setType(alCustomizationSettings.getDefaultGroupType());
+                    } else {
+                        channelInfo.setType(groupType);
+                    }
                     AlChannelCreateAsyncTask alChannelCreateAsyncTask = new AlChannelCreateAsyncTask(getActivity(), channelInfo, taskListenerInterface);
                     alChannelCreateAsyncTask.execute((Void) null);
                 }
@@ -487,7 +491,7 @@ public class ContactSelectionFragment extends ListFragment implements SearchList
         mSearchTerm = newFilter;
         mAdapter.indexOfSearchQuery(newFilter);
         getLoaderManager().restartLoader(
-                    ContactSelectionFragment.ContactsQuery.QUERY_ID, null, ContactSelectionFragment.this);
+                ContactSelectionFragment.ContactsQuery.QUERY_ID, null, ContactSelectionFragment.this);
         return true;
     }
 
@@ -739,8 +743,8 @@ public class ContactSelectionFragment extends ListFragment implements SearchList
     private final class RefreshContactsScreenBroadcast extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (intent != null && BroadcastService.INTENT_ACTIONS.UPDATE_USER_DETAIL.toString().equals(intent.getAction())){
-                if(getLoaderManager() != null) {
+            if (intent != null && BroadcastService.INTENT_ACTIONS.UPDATE_USER_DETAIL.toString().equals(intent.getAction())) {
+                if (getLoaderManager() != null) {
                     try {
                         if (TextUtils.isEmpty(contactsGroupId)) {
                             getLoaderManager().restartLoader(
@@ -757,8 +761,8 @@ public class ContactSelectionFragment extends ListFragment implements SearchList
     @Override
     public void onResume() {
         super.onResume();
-        if(refreshContactsScreenBroadcast !=  null){
-            LocalBroadcastManager.getInstance(getActivity()).registerReceiver(refreshContactsScreenBroadcast,new IntentFilter(BroadcastService.INTENT_ACTIONS.UPDATE_USER_DETAIL.toString()));
+        if (refreshContactsScreenBroadcast != null) {
+            LocalBroadcastManager.getInstance(getActivity()).registerReceiver(refreshContactsScreenBroadcast, new IntentFilter(BroadcastService.INTENT_ACTIONS.UPDATE_USER_DETAIL.toString()));
         }
 
     }
@@ -766,7 +770,7 @@ public class ContactSelectionFragment extends ListFragment implements SearchList
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if(refreshContactsScreenBroadcast !=  null){
+        if (refreshContactsScreenBroadcast != null) {
             LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(refreshContactsScreenBroadcast);
         }
     }

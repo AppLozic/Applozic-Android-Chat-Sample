@@ -7,6 +7,8 @@ import android.text.TextUtils;
 import com.applozic.mobicomkit.api.MobiComKitClientService;
 import com.applozic.mobicomkit.api.account.register.RegistrationResponse;
 
+import java.util.Set;
+
 
 public class MobiComUserPreference {
 
@@ -61,6 +63,8 @@ public class MobiComUserPreference {
     private static String application_info_call_done = "application_info_call_done";
     private static String notification_sound_fileName = "notificationSoundFileName";
     private static String CONTACTS_GROUP_ID = "CONTACTS_GROUP_ID";
+    private static String CONTACT_GROUP_ID_LISTS = "contactGroupIdLists";
+    private static String IS_CONTACT_GROUP_NAME_LIST = "isContactGroupNameList";
 
     public SharedPreferences sharedPreferences;
     private Context context;
@@ -523,8 +527,8 @@ public class MobiComUserPreference {
         return sharedPreferences.getBoolean(application_info_call_done, false);
     }
 
-    public  void setApplicationInfoCallDone(boolean customerResponse) {
-        sharedPreferences.edit().putBoolean(application_info_call_done,customerResponse).commit();
+    public void setApplicationInfoCallDone(boolean customerResponse) {
+        sharedPreferences.edit().putBoolean(application_info_call_done, customerResponse).commit();
     }
 
     public String getNotificationSoundFilePath() {
@@ -543,4 +547,19 @@ public class MobiComUserPreference {
         sharedPreferences.edit().putString(CONTACTS_GROUP_ID, contactsGroupId).commit();
     }
 
+    public void setContactGroupIdList(Set<String> contactGroupList) {
+        sharedPreferences.edit().putStringSet(CONTACT_GROUP_ID_LISTS, contactGroupList).commit();
+    }
+
+    public Set<String> getContactGroupIdList() {
+        return sharedPreferences.getStringSet(CONTACT_GROUP_ID_LISTS, null);
+    }
+
+    public boolean isContactGroupNameList() {
+        return sharedPreferences.getBoolean(IS_CONTACT_GROUP_NAME_LIST, false);
+    }
+
+    public void setIsContactGroupNameList(boolean isContactGroupNameList) {
+        sharedPreferences.edit().putBoolean(IS_CONTACT_GROUP_NAME_LIST, isContactGroupNameList).commit();
+    }
 }

@@ -867,7 +867,7 @@ public class FileUtils {
         return name.substring(0, pos);
     }
 
-    public static boolean isMaxUploadSizeReached(Context context ,Uri uri,int maxFileSize) {
+    public static boolean isMaxUploadSizeReached(Context context ,Uri uri,long maxFileSize) {
         try{
             Cursor returnCursor = context.getContentResolver().query(uri, null, null, null, null);
             if (returnCursor != null) {

@@ -82,6 +82,7 @@ public class AlCustomizationSettings extends JsonMarker {
     private boolean muteOption = true;
     private String logoutPackageName;
     private boolean logoutOption = false;
+    private int defaultGroupType = 2;
 
     private int totalRegisteredUserToFetch = 100;
     private int maxAttachmentAllowed = 5;
@@ -490,6 +491,14 @@ public class AlCustomizationSettings extends JsonMarker {
 
     public void setRecordButton(boolean recordButton) {
         this.recordButton = recordButton;
+    }
+
+    public int getDefaultGroupType() {
+        return defaultGroupType;
+    }
+
+    public void setDefaultGroupType(int defaultGroupType) {
+        this.defaultGroupType = defaultGroupType;
     }
 
     @Override

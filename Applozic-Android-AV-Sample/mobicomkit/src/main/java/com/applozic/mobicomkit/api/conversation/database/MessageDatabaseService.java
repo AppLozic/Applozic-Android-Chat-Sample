@@ -572,7 +572,7 @@ public class MessageDatabaseService {
             if (message.getMetadata() != null && !message.getMetadata().isEmpty()) {
                 values.put(MobiComDatabaseHelper.MESSAGE_METADATA, GsonUtils.getJsonFromObject(message.getMetadata(), Map.class));
             }
-            values.put(MobiComDatabaseHelper.REPLY_MESSAGE,message.isReplyMessage());
+            values.put(MobiComDatabaseHelper.REPLY_MESSAGE, message.isReplyMessage());
             //TODO:Right now we are supporting single image attachment...making entry in same table
             if (message.getFileMetas() != null) {
                 FileMeta fileMeta = message.getFileMetas();
@@ -587,7 +587,7 @@ public class MessageDatabaseService {
             }
             id = database.insertOrThrow("sms", null, values);
         } catch (SQLException ex) {
-            Utils.printLog(context,TAG, " Ignore Duplicate entry in sms table, sms: " + message);
+            Utils.printLog(context, TAG, " Ignore Duplicate entry in sms table, sms: " + message);
         } finally {
             dbHelper.close();
         }
@@ -744,7 +744,7 @@ public class MessageDatabaseService {
             dbHelper.close();
             return conversationCount;
         } catch (Exception ex) {
-            Utils.printLog(context,TAG, "Exception while fetching unread conversation count");
+            Utils.printLog(context, TAG, "Exception while fetching unread conversation count");
         }
         return 0;
     }
@@ -762,7 +762,7 @@ public class MessageDatabaseService {
             dbHelper.close();
             return unreadMessageCount;
         } catch (Exception ex) {
-            Utils.printLog(context,TAG, "Exception while fetching unread message count");
+            Utils.printLog(context, TAG, "Exception while fetching unread message count");
             return 0;
         }
     }
@@ -808,17 +808,24 @@ public class MessageDatabaseService {
     }
 
 
-    public boolean isMessagePresent(String key,Integer replyMessageType) {
+    public boolean isMessagePresent(String key, Integer replyMessageType) {
+        Cursor cursor = null;
+        boolean present = false;
         SQLiteDatabase database = dbHelper.getWritableDatabase();
-        Cursor cursor = database.rawQuery(
-                "SELECT COUNT(*) FROM sms WHERE keyString = ? AND replyMessage = ?",
-                new String[]{key,String.valueOf(replyMessageType)});
-        cursor.moveToFirst();
-        boolean present = cursor.getInt(0) > 0;
-        if (cursor != null) {
-            cursor.close();
+        try {
+            cursor = database.rawQuery(
+                    "SELECT COUNT(*) FROM sms WHERE keyString = ? AND replyMessage = ?",
+                    new String[]{key, String.valueOf(replyMessageType)});
+            cursor.moveToFirst();
+            present = cursor.getInt(0) > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+            dbHelper.close();
         }
-        dbHelper.close();
         return present;
     }
 
@@ -908,7 +915,7 @@ public class MessageDatabaseService {
         }
 
         String hiddenType = " and m1.messageContentType not in (" + Message.ContentType.HIDDEN.getValue()
-                + "," + Message.ContentType.VIDEO_CALL_NOTIFICATION_MSG.getValue() + ") AND m1.hidden = 0 AND m1.replyMessage not in (" + Message.ReplyMessage.HIDE_MESSAGE.getValue()+")";
+                + "," + Message.ContentType.VIDEO_CALL_NOTIFICATION_MSG.getValue() + ") AND m1.hidden = 0 AND m1.replyMessage not in (" + Message.ReplyMessage.HIDE_MESSAGE.getValue() + ")";
 
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         /*final Cursor cursor = db.rawQuery("select * from sms where createdAt in " +
@@ -940,26 +947,27 @@ public class MessageDatabaseService {
     public void deleteMessageFromDb(Message message) {
         try {
             SQLiteDatabase database = dbHelper.getWritableDatabase();
-            database.delete("sms", "keyString" + "='" + message.getKeyString() + "'" , null);
+            database.delete("sms", "keyString" + "='" + message.getKeyString() + "'", null);
             dbHelper.close();
-        } catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
     public void deleteConversation(String contactNumber) {
-        Utils.printLog(context,TAG, "Deleting conversation for contactNumber: " + contactNumber);
+        Utils.printLog(context, TAG, "Deleting conversation for contactNumber: " + contactNumber);
         int deletedRows = dbHelper.getWritableDatabase().delete("sms", "contactNumbers=? AND channelKey = 0", new String[]{contactNumber});
         updateContactUnreadCountToZero(contactNumber);
         dbHelper.close();
-        Utils.printLog(context,TAG, "Delete " + deletedRows + " messages.");
+        Utils.printLog(context, TAG, "Delete " + deletedRows + " messages.");
     }
 
     public void deleteChannelConversation(Integer channelKey) {
-        Utils.printLog(context,TAG, "Deleting  Conversation for channel: " + channelKey);
+        Utils.printLog(context, TAG, "Deleting  Conversation for channel: " + channelKey);
         int deletedRows = dbHelper.getWritableDatabase().delete("sms", "channelKey=?", new String[]{String.valueOf(channelKey)});
         updateChannelUnreadCountToZero(channelKey);
         dbHelper.close();
-        Utils.printLog(context,TAG, "Delete " + deletedRows + " messages.");
+        Utils.printLog(context, TAG, "Delete " + deletedRows + " messages.");
     }
 
     public synchronized void updateContactUnreadCount(String userId) {
@@ -998,17 +1006,17 @@ public class MessageDatabaseService {
         }
     }
 
-    public void updateReplyFlag(String messageKey,int isReplyMessage){
+    public void updateReplyFlag(String messageKey, int isReplyMessage) {
         ContentValues values = new ContentValues();
         values.put("replyMessage", isReplyMessage);
         int updatedMessage = dbHelper.getWritableDatabase().update("sms", values, " keyString = '" + messageKey + "'", null);
     }
 
-    public void updateMessageReplyType(String messageKey,Integer replyMessage){
+    public void updateMessageReplyType(String messageKey, Integer replyMessage) {
         try {
             ContentValues values = new ContentValues();
             values.put("replyMessage", replyMessage);
-            dbHelper.getWritableDatabase().update("sms", values, "keyString = ?",new String[]{messageKey});
+            dbHelper.getWritableDatabase().update("sms", values, "keyString = ?", new String[]{messageKey});
         } catch (Exception ex) {
             ex.printStackTrace();
         } finally {

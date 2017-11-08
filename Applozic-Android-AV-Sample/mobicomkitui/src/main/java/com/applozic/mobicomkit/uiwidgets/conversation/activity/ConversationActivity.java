@@ -70,6 +70,7 @@ import com.applozic.mobicomkit.contact.BaseContactService;
 import com.applozic.mobicomkit.uiwidgets.AlCustomizationSettings;
 import com.applozic.mobicomkit.uiwidgets.ApplozicSetting;
 import com.applozic.mobicomkit.uiwidgets.R;
+import com.applozic.mobicomkit.uiwidgets.async.AlGetMembersFromContactGroupListTask;
 import com.applozic.mobicomkit.uiwidgets.conversation.ConversationUIService;
 import com.applozic.mobicomkit.uiwidgets.conversation.MessageCommunicator;
 import com.applozic.mobicomkit.uiwidgets.conversation.MobiComKitBroadcastReceiver;
@@ -102,8 +103,11 @@ import com.theartofdev.edmodo.cropper.CropImageView;
 import java.io.File;
 import java.lang.ref.WeakReference;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 
 /**
@@ -407,6 +411,21 @@ public class ConversationActivity extends AppCompatActivity implements MessageCo
             accountStatusAsyncTask.execute();
         }
         registerReceiver(connectivityReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
+
+        if (getIntent() != null) {
+            Set<String> userIdLists = new HashSet<String>();
+            if (getIntent().getStringArrayListExtra(ConversationUIService.GROUP_NAME_LIST_CONTACTS) != null) {
+                MobiComUserPreference.getInstance(this).setIsContactGroupNameList(true);
+                userIdLists.addAll(getIntent().getStringArrayListExtra(ConversationUIService.GROUP_NAME_LIST_CONTACTS));
+            } else if (getIntent().getStringArrayListExtra(ConversationUIService.GROUP_ID_LIST_CONTACTS) != null) {
+                MobiComUserPreference.getInstance(this).setIsContactGroupNameList(false);
+                userIdLists.addAll(getIntent().getStringArrayListExtra(ConversationUIService.GROUP_ID_LIST_CONTACTS));
+            }
+
+            if (!userIdLists.isEmpty()) {
+                MobiComUserPreference.getInstance(this).setContactGroupIdList(userIdLists);
+            }
+        }
     }
 
     @Override
@@ -606,8 +625,7 @@ public class ConversationActivity extends AppCompatActivity implements MessageCo
             } else {
                 showSnackBar(R.string.audio_or_camera_permission_not_granted);
             }
-        }
-        else {
+        } else {
             super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
     }
@@ -666,20 +684,20 @@ public class ConversationActivity extends AppCompatActivity implements MessageCo
         int id = item.getItemId();
         //noinspection SimplifiableIfStatement
         if (id == R.id.start_new) {
-                if (!TextUtils.isEmpty(contactsGroupId)) {
-                    if (Utils.isInternetAvailable(this)) {
-                        conversationUIService.startContactActivityForResult();
-                    } else {
-                        Intent intent = new Intent(this, MobiComKitPeopleActivity.class);
-                        ChannelDatabaseService channelDatabaseService = ChannelDatabaseService.getInstance(this);
-                        String[] userIdArray = channelDatabaseService.getChannelMemberByName(contactsGroupId, null);
-                        if (userIdArray != null) {
-                            conversationUIService.startContactActivityForResult(intent, null, null, userIdArray);
-                        }
-                    }
-                } else {
+            if (!TextUtils.isEmpty(contactsGroupId)) {
+                if (Utils.isInternetAvailable(this)) {
                     conversationUIService.startContactActivityForResult();
+                } else {
+                    Intent intent = new Intent(this, MobiComKitPeopleActivity.class);
+                    ChannelDatabaseService channelDatabaseService = ChannelDatabaseService.getInstance(this);
+                    String[] userIdArray = channelDatabaseService.getChannelMemberByName(contactsGroupId, null);
+                    if (userIdArray != null) {
+                        conversationUIService.startContactActivityForResult(intent, null, null, userIdArray);
+                    }
                 }
+            } else {
+                conversationUIService.startContactActivityForResult();
+            }
         } else if (id == R.id.conversations) {
             Intent intent = new Intent(this, ChannelCreateActivity.class);
             intent.putExtra(ChannelCreateActivity.GROUP_TYPE, Channel.GroupType.PUBLIC.getValue().intValue());

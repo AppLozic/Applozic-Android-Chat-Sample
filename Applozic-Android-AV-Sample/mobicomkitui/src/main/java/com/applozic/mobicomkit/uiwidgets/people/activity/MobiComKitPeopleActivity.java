@@ -186,7 +186,6 @@ public class MobiComKitPeopleActivity extends AppCompatActivity implements OnCon
             searchItem.collapseActionView();
         }
         searchView.setOnQueryTextListener(this);
-        searchView.setSubmitButtonEnabled(true);
         searchView.setIconified(true);
         return super.onCreateOptionsMenu(menu);
     }
@@ -240,7 +239,7 @@ public class MobiComKitPeopleActivity extends AppCompatActivity implements OnCon
             } else if (type.startsWith("image/") || type.startsWith("audio/") || type.startsWith("video/")) {
                 Uri fileUri = (Uri) intentExtra.getParcelableExtra(Intent.EXTRA_STREAM);
                 if (fileUri != null) {
-                    int maxSize = alCustomizationSettings.getMaxAttachmentSizeAllowed() * 1024 * 1024;
+                    long maxSize = alCustomizationSettings.getMaxAttachmentSizeAllowed() * 1024 * 1024;
                     if (FileUtils.isMaxUploadSizeReached(this, fileUri, maxSize)) {
                         Toast.makeText(this, getString(R.string.info_attachment_max_allowed_file_size), Toast.LENGTH_LONG).show();
                         return;
@@ -284,7 +283,7 @@ public class MobiComKitPeopleActivity extends AppCompatActivity implements OnCon
                 finish();
             } else if (type.startsWith("image/") || type.startsWith("audio/") || type.startsWith("video/")) {
                 Uri fileUri = (Uri) intentExtra.getParcelableExtra(Intent.EXTRA_STREAM);
-                int maxSize = alCustomizationSettings.getMaxAttachmentSizeAllowed() * 1024 * 1024;
+                long maxSize = alCustomizationSettings.getMaxAttachmentSizeAllowed() * 1024 * 1024;
                 if (FileUtils.isMaxUploadSizeReached(this, fileUri, maxSize)) {
                     Toast.makeText(this, getString(R.string.info_attachment_max_allowed_file_size), Toast.LENGTH_LONG).show();
                     return;

@@ -292,6 +292,7 @@ public class ApplozicDocumentView {
                     Intent intent = new Intent();
                     intent.setAction(Intent.ACTION_VIEW);
                     intent.setDataAndType(uri, mimeType);
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     if (intent.resolveActivity(context.getPackageManager()) != null) {
                         context.startActivity(intent);
                     } else {

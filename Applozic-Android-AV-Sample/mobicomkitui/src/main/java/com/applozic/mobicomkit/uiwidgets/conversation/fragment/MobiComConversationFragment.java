@@ -1711,7 +1711,7 @@ abstract public class MobiComConversationFragment extends Fragment implements Vi
             int sizeIndex = returnCursor.getColumnIndex(OpenableColumns.SIZE);
             returnCursor.moveToFirst();
             Long fileSize = returnCursor.getLong(sizeIndex);
-            int maxFileSize = alCustomizationSettings.getMaxAttachmentSizeAllowed() * 1024 * 1024;
+            long maxFileSize = alCustomizationSettings.getMaxAttachmentSizeAllowed() * 1024 * 1024;
             if (fileSize > maxFileSize) {
                 Toast.makeText(getActivity(), R.string.info_attachment_max_allowed_file_size, Toast.LENGTH_LONG).show();
                 return;

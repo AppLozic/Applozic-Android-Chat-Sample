@@ -8,7 +8,7 @@ android {
         minSdkVersion 14
         targetSdkVersion 25
         versionCode 1
-        versionName "4.99"
+        versionName "5.1.5"
     }
     buildTypes {
         release {
@@ -37,8 +37,10 @@ dependencies {
     compile 'com.theartofdev.edmodo:android-image-cropper:2.4.5'
     compile 'com.android.support:cardview-v7:25.3.1'
     compile project(':mobicomkit')//Note: use this for customization
-   // compile 'com.applozic.communication.message:mobicomkit:4.99' //Note: use this in case customization is not required
+   // compile 'com.applozic.communication.message:mobicomkit:5.1.5' //Note: use this in case customization is not required
+
 }
+
 
 /*
 
@@ -56,7 +58,7 @@ ext {
     artifact = 'mobicomkitui'
 
     libraryDescription = 'Applozic Communication UI Widget'
-    libraryVersion = '4.99'
+    libraryVersion = '5.1.5'
 
     developerId = 'devashish'
     developerName = 'Applozic'
@@ -119,7 +121,6 @@ bintray {
         }
     }
 }
-
-
 */
+
 

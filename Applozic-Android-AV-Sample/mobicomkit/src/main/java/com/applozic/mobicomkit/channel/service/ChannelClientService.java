@@ -44,11 +44,13 @@ public class ChannelClientService extends MobiComKitClientService {
     private static final String GET_GROUP_INFO_FROM_GROUP_IDS_URL = "/rest/ws/group/details";
     private static final String ADD_MEMBERS_TO_CONTACT_GROUP_OF_TYPE_URL = "/rest/ws/group/%s/add/members";
     private static final String GET_MEMBERS_TO_CONTACT_GROUP_OF_TYPE_URL = "/rest/ws/group/%s/get";
+    private static final String GET_MEMBERS_FROM_CONTACT_GROUP_LIST_URL = "/rest/ws/group/favourite/list/get";
     private static final String UPDATED_AT = "updatedAt";
     private static final String USER_ID = "userId";
     private static final String GROUP_ID = "groupId";
     private static final String CLIENT_GROUPID = "clientGroupId";
     private static final String GROUPIDS = "groupIds";
+    private static final String GROUP_NAME = "groupName";
     private static final String CLIENT_GROUPIDs = "clientGroupIds";
     private static final String GROUPTYPE = "groupType";
     private static final String TAG = "ChannelClientService";
@@ -134,6 +136,10 @@ public class ChannelClientService extends MobiComKitClientService {
 
     public String getMembersFromContactGroupOfTypeUrl() {
         return getBaseUrl() + GET_MEMBERS_TO_CONTACT_GROUP_OF_TYPE_URL;
+    }
+
+    private String getMembersFromContactGroupListUrl() {
+        return getBaseUrl() + GET_MEMBERS_FROM_CONTACT_GROUP_LIST_URL;
     }
 
     public String getGroupInfoFromGroupIdsUrl() {
@@ -577,6 +583,47 @@ public class ChannelClientService extends MobiComKitClientService {
             Utils.printLog(context, TAG, e.getMessage());
         }
         return apiResponse;
+    }
+
+    public ChannelFeedListResponse getMemebersFromContactGroupIds(List<String> groupIds, List<String> groupNames, String groupType) {
+        ChannelFeedListResponse channelFeedListResponse = null;
+
+        try {
+            StringBuilder parameters = new StringBuilder("?");
+
+            if (!TextUtils.isEmpty(groupType)) {
+                parameters.append(GROUPTYPE + "=" + groupType + "&");
+            }
+
+            if (groupIds != null) {
+                for (String groupId : groupIds) {
+                    if (!TextUtils.isEmpty(groupId)) {
+                        parameters.append(GROUP_ID + "=" + groupId + "&");
+                    }
+                }
+            }
+
+            if (groupNames != null) {
+                for (String groupName : groupNames) {
+                    if (!TextUtils.isEmpty(groupName)) {
+                        parameters.append(GROUP_NAME + "=" + groupName + "&");
+
+                    }
+                }
+            }
+
+            String url = getMembersFromContactGroupListUrl() + parameters;
+
+            String response = httpRequestUtils.getResponse(url, "application/json", "application/json");
+            channelFeedListResponse = (ChannelFeedListResponse) GsonUtils.getObjectFromJson(response, ChannelFeedListResponse.class);
+
+            if (channelFeedListResponse != null) {
+                Utils.printLog(context, TAG, "Get Memebers from Contact Group List of Type Response : " + channelFeedListResponse.getStatus());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return channelFeedListResponse;
     }
 
     public ApiResponse removeMemberFromContactGroupOfType(String groupName, String groupType, String userId) {

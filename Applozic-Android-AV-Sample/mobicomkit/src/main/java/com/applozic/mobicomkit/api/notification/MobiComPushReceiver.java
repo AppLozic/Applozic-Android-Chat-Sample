@@ -24,7 +24,8 @@ import java.util.Map;
 import java.util.Queue;
 
 
-public class MobiComPushReceiver {
+public class
+MobiComPushReceiver {
 
     public static final String MTCOM_PREFIX = "APPLOZIC_";
     public static final List<String> notificationKeyList = new ArrayList<String>();
@@ -71,11 +72,17 @@ public class MobiComPushReceiver {
 
     public static boolean isMobiComPushNotification(Intent intent) {
         Log.d(TAG, "checking for Applozic notification.");
+        if (intent == null) {
+            return false;
+        }
         return isMobiComPushNotification(intent.getExtras());
     }
 
     public static boolean isMobiComPushNotification(Bundle bundle) {
         //This is to identify collapse key sent in notification..
+        if (bundle == null) {
+            return false;
+        }
         String payLoad = bundle.getString("collapse_key");
         Log.d(TAG, "Received notification");
 
@@ -95,6 +102,10 @@ public class MobiComPushReceiver {
     public static boolean isMobiComPushNotification(Map<String, String> data) {
 
         //This is to identify collapse key sent in notification..
+        if (data == null && data.isEmpty()) {
+            return false;
+        }
+
         String payLoad = data.toString();
         Log.d(TAG, "Received notification");
 
@@ -147,7 +158,7 @@ public class MobiComPushReceiver {
                     messageSent = null, deleteConversationForContact = null, deleteConversationForChannel = null,
                     deleteMessage = null, conversationReadResponse = null,
                     userBlockedResponse = null, userUnBlockedResponse = null, conversationReadForContact = null, conversationReadForChannel = null, conversationReadForSingleMessage = null,
-                    userDetailChanged =null,userDeleteNotification =null;
+                    userDetailChanged = null, userDeleteNotification = null;
             SyncCallService syncCallService = SyncCallService.getInstance(context);
 
             if (bundle != null) {
@@ -340,10 +351,10 @@ public class MobiComPushReceiver {
 
             if (!TextUtils.isEmpty(userDetailChanged) || !TextUtils.isEmpty(userDeleteNotification)) {
                 MqttMessageResponse response = null;
-                if(!TextUtils.isEmpty(userDetailChanged)) {
+                if (!TextUtils.isEmpty(userDetailChanged)) {
                     response = (MqttMessageResponse) GsonUtils.getObjectFromJson(userDetailChanged, MqttMessageResponse.class);
-                }else if(!TextUtils.isEmpty(userDeleteNotification)){
-                    response =  (MqttMessageResponse) GsonUtils.getObjectFromJson(userDeleteNotification, MqttMessageResponse.class);
+                } else if (!TextUtils.isEmpty(userDeleteNotification)) {
+                    response = (MqttMessageResponse) GsonUtils.getObjectFromJson(userDeleteNotification, MqttMessageResponse.class);
                 }
                 if (processPushNotificationId(response.getId())) {
                     return;

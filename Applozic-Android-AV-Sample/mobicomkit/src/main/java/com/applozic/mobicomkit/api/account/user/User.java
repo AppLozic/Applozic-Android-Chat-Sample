@@ -24,6 +24,7 @@ public class User extends JsonMarker {
     private Short deviceType;
     private String imageLink;
     private boolean enableEncryption;
+    private Short pushNotificationFormat;
     private Short authenticationTypeId = AuthenticationType.CLIENT.getValue();
     private String displayName;
     private String appModuleName;
@@ -197,6 +198,14 @@ public class User extends JsonMarker {
 
     public void setNotificationSoundFilePath(String notificationSoundFilePath) {
         this.notificationSoundFilePath = notificationSoundFilePath;
+    }
+
+    public Short getPushNotificationFormat() {
+        return pushNotificationFormat;
+    }
+
+    public void setPushNotificationFormat(Short pushNotificationFormat) {
+        this.pushNotificationFormat = pushNotificationFormat;
     }
 
     public enum AuthenticationType {
