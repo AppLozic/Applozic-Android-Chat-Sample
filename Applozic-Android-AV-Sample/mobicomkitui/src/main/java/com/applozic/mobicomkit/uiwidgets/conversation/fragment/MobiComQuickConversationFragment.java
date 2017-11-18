@@ -330,11 +330,17 @@ public class MobiComQuickConversationFragment extends Fragment implements Search
             return;
         }
         try {
-            if (getActivity() != null) {
-                if (conversationAdapter != null) {
-                    conversationAdapter.notifyDataSetChanged();
-                }
-            }
+           this.getActivity().runOnUiThread(new Runnable() {
+               @Override
+               public void run() {
+                   if (getActivity() != null) {
+                       if (conversationAdapter != null) {
+                           conversationAdapter.notifyDataSetChanged();
+                       }
+                   }
+               }
+           });
+
         } catch (Exception e) {
             Utils.printLog(getActivity(), "AL", "Exception while updating view .");
         }
@@ -572,12 +578,14 @@ public class MobiComQuickConversationFragment extends Fragment implements Search
             }
         }
         downloadConversations(false, searchString);
-        swipeLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-            public void onRefresh() {
-                SyncMessages syncMessages = new SyncMessages();
-                syncMessages.execute();
-            }
-        });
+        if(swipeLayout!= null) {
+            swipeLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+                public void onRefresh() {
+                    SyncMessages syncMessages = new SyncMessages();
+                    syncMessages.execute();
+                }
+            });
+        }
     }
 
     @Override

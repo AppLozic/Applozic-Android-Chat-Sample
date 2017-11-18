@@ -900,7 +900,8 @@ public class ConversationUIService {
                     ((MobiComKitActivityInterface) fragmentActivity).retry();
                     Intent intent = new Intent(fragmentActivity, ApplozicMqttIntentService.class);
                     intent.putExtra(ApplozicMqttIntentService.SUBSCRIBE, true);
-                    fragmentActivity.startService(intent);
+                    ApplozicMqttIntentService.enqueueWork(fragmentActivity,intent);
+
                 }
             }
         } catch (Exception e) {

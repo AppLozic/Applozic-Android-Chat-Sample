@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.text.TextUtils;
 
 import com.applozic.mobicomkit.api.MobiComKitConstants;
+import com.applozic.mobicomkit.api.account.user.MobiComUserPreference;
 import com.applozic.mobicomkit.api.conversation.Message;
 import com.applozic.mobicommons.commons.core.utils.Utils;
 import com.applozic.mobicommons.json.GsonUtils;
@@ -22,12 +23,12 @@ public class MTNotificationBroadcastReceiver extends BroadcastReceiver {
         String action = intent.getAction();
         String messageJson = intent.getStringExtra(MobiComKitConstants.MESSAGE_JSON_INTENT);
         Utils.printLog(context,TAG, "Received broadcast, action: " + action + ", message: " + messageJson);
-        if (!TextUtils.isEmpty(messageJson)) {
+        if (!TextUtils.isEmpty(messageJson) && MobiComUserPreference.getInstance(context).isLoggedIn()) {
             final Message message = (Message) GsonUtils.getObjectFromJson(messageJson, Message.class);
             Intent notificationIntentService = new Intent(context, NotificationIntentService.class);
             notificationIntentService.setAction(NotificationIntentService.ACTION_AL_NOTIFICATION);
             notificationIntentService.putExtra(MobiComKitConstants.AL_MESSAGE, message);
-            context.startService(notificationIntentService);
+            NotificationIntentService.enqueueWork(context,notificationIntentService);
         }
     }
 }

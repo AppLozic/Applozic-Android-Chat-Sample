@@ -10,8 +10,11 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
+import android.media.AudioAttributes;
+import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Handler;
@@ -109,7 +112,7 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
     protected VideoCallNotificationHelper videoCallNotificationHelper;
     protected Contact contactToCall;
     protected Token token;
-
+    static final  String CONNECTIVITY_CHANGE = "android.net.conn.CONNECTIVITY_CHANGE";
     // ************** APPLOZIC NOTIFICATION AND PROFILE ***************************//
     protected boolean answered;
     protected ProgressDialog progress;
@@ -160,7 +163,7 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
         intentFilter.addAction(VideoCallNotificationHelper.CALL_END);
         intentFilter.addAction(MobiComKitConstants.APPLOZIC_VIDEO_DIALED);
         intentFilter.addAction(VideoCallNotificationHelper.CALL_MISSED);
-        intentFilter.addAction(ConnectivityReceiver.CONNECTIVITY_CHANGE);
+        intentFilter.addAction(CONNECTIVITY_CHANGE);
 
         return intentFilter;
     }
@@ -802,8 +805,8 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
         if (enable) {
             previousAudioMode = audioManager.getMode();
             // Request audio focus before making any device switch.
-            audioManager.requestAudioFocus(null, AudioManager.STREAM_VOICE_CALL,
-                    AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
+
+            requestAudioFocus();
             /*
              * Use MODE_IN_COMMUNICATION as the default audio mode. It is required
              * to be in this mode when playout and/or recording starts for the best
@@ -822,6 +825,32 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
             audioManager.setMicrophoneMute(previousMicrophoneMute);
         }
     }
+
+
+    private void requestAudioFocus() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            AudioAttributes playbackAttributes = new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build();
+            AudioFocusRequest focusRequest =
+                    new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+                            .setAudioAttributes(playbackAttributes)
+                            .setAcceptsDelayedFocusGain(true)
+                            .setOnAudioFocusChangeListener(
+                                    new AudioManager.OnAudioFocusChangeListener() {
+                                        @Override
+                                        public void onAudioFocusChange(int i) { }
+                                    })
+                            .build();
+            audioManager.requestAudioFocus(focusRequest);
+        } else {
+            audioManager.requestAudioFocus(null, AudioManager.STREAM_VOICE_CALL,
+                    AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
+        }
+    }
+
+
 
     @Override
     public void onNetworkComplete(String response) {
@@ -963,7 +992,7 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
 
                 Log.i(TAG, "incomingCallId: " + incomingCallId + ", intent.getAction(): " + intent.getAction());
 
-                if (ConnectivityReceiver.CONNECTIVITY_CHANGE.equals(intent.getAction())) {
+                if (CONNECTIVITY_CHANGE.equals(intent.getAction())) {
                     if (!Utils.isInternetAvailable(context)) {
                         Toast.makeText(context, R.string.no_network_connectivity, Toast.LENGTH_LONG);
                         if (room != null && room.getState().equals(RoomState.CONNECTED)) {

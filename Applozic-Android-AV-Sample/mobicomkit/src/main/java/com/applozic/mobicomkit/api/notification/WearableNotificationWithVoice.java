@@ -75,7 +75,7 @@ public class WearableNotificationWithVoice {
             int smallIconViewId = mContext.getResources().getIdentifier("right_icon", "id", android.R.class.getPackage().getName());
             if (smallIconViewId != 0) {
 
-                if (notification.contentIntent != null) {
+                if (notification.contentIntent != null  && notification.contentView != null) {
                     notification.contentView.setViewVisibility(smallIconViewId, View.INVISIBLE);
                 }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {

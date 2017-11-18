@@ -84,14 +84,6 @@
                 android:value=".MainActivity" />
         </activity>
 
-        <receiver
-            android:name="com.applozic.mobicomkit.uiwidgets.notification.MTNotificationBroadcastReceiver"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="${applicationId}.send.notification" />
-            </intent-filter>
-        </receiver>
-
         <activity
             android:name="com.applozic.mobicomkit.uiwidgets.conversation.activity.ContactSelectionActivity"
             android:configChanges="keyboardHidden|screenSize|smallestScreenSize|screenLayout|orientation"
@@ -128,7 +120,7 @@
             android:configChanges="keyboardHidden|screenSize|smallestScreenSize|screenLayout|orientation"
             android:launchMode="singleTop"
             android:parentActivityName="com.applozic.mobicomkit.uiwidgets.conversation.activity.ConversationActivity"
-            android:theme="@style/ApplozicTheme"></activity>
+            android:theme="@style/ApplozicTheme"/>
         <activity
             android:name="com.applozic.mobicomkit.uiwidgets.conversation.activity.ChannelInfoActivity"
             android:configChanges="keyboardHidden|screenSize|smallestScreenSize|screenLayout|orientation"
@@ -209,9 +201,7 @@
         <meta-data
             android:name="io.fabric.ApiKey"
             android:value="9b43bb084d2988834ffc7cc5c9de46ad80356861" />
-        <service
-            android:name="com.applozic.mobicomkit.uiwidgets.notification.NotificationIntentService"
-            android:exported="false" />
+
         <!--
             <activity
             android:name="com.facebook.FacebookActivity"
@@ -222,34 +212,32 @@
 
 
         <!-- Applozic -->
+
         <service
             android:name="com.applozic.mobicomkit.api.conversation.MessageIntentService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
             android:exported="false" />
         <service
             android:name="com.applozic.mobicomkit.api.conversation.ApplozicIntentService"
-            android:exported="false" />
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE"/>
         <service
             android:name="com.applozic.mobicomkit.api.conversation.ApplozicMqttIntentService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
             android:exported="false" />
         <service
             android:name="com.applozic.mobicomkit.api.people.UserIntentService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
             android:exported="false" />
+
         <service
-            android:name="com.applozic.mobicomkit.api.conversation.ConversationReadService"
+            android:name="com.applozic.mobicomkit.uiwidgets.notification.NotificationIntentService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
             android:exported="false" />
-
-        <receiver android:name="com.applozic.mobicomkit.broadcast.NotificationBroadcastReceiver">
-            <intent-filter>
-                <action android:name="applozic.LAUNCH_APP" />
-            </intent-filter>
-
-            <meta-data
-                android:name="activity.open.on.notification"
-                android:value="com.applozic.mobicomkit.uiwidgets.conversation.activity.ConversationActivity" />
-        </receiver>
 
         <service
             android:name="com.applozic.mobicomkit.api.conversation.ConversationIntentService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
             android:exported="false" />
 
         <receiver android:name="com.applozic.mobicomkit.broadcast.TimeChangeBroadcastReceiver">

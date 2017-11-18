@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
+import android.support.annotation.NonNull;
 import android.support.v4.content.LocalBroadcastManager;
 
 import com.applozic.mobicomkit.api.account.user.MobiComUserPreference;
@@ -15,18 +16,19 @@ import com.applozic.mobicommons.commons.core.utils.Utils;
  */
 public class ConnectivityReceiver extends BroadcastReceiver {
 
-    static final public String CONNECTIVITY_CHANGE = "android.net.conn.CONNECTIVITY_CHANGE";
     static final private String TAG = "ConnectivityReceiver";
+    static final private String CONNECTIVITY_CHANGE = "android.net.conn.CONNECTIVITY_CHANGE";
     private static final String BOOT_COMPLETED = "android.intent.action.BOOT_COMPLETED";
-    private static boolean firstConnect = true;
     Context context;
+    private static boolean firstConnect = true;
 
     @Override
-    public void onReceive(final Context context, Intent intent) {
+    public void onReceive(@NonNull final Context context,@NonNull Intent intent) {
         this.context = context;
         String action = intent.getAction();
-        Utils.printLog(context,TAG, action);
         LocalBroadcastManager.getInstance(context).sendBroadcast(new Intent(action));
+        Utils.printLog(context, TAG, action);
+
         if (action.equalsIgnoreCase(CONNECTIVITY_CHANGE) || action.equalsIgnoreCase(BOOT_COMPLETED)) {
             if (!Utils.isInternetAvailable(context)) {
                 firstConnect = true;
@@ -41,7 +43,7 @@ public class ConnectivityReceiver extends BroadcastReceiver {
                     firstConnect = false;
                     Intent connectivityIntent = new Intent(context, ApplozicIntentService.class);
                     connectivityIntent.putExtra(ApplozicIntentService.AL_SYNC_ON_CONNECTIVITY, true);
-                    context.startService(connectivityIntent);
+                    ApplozicIntentService.enqueueWork(context,connectivityIntent);
                 }
             }
         }

@@ -35,7 +35,6 @@ public class ApplozicAudioManager {
     private ApplozicAudioManager(Context context) {
         this.context = context;
         mTelephonyMgr = (TelephonyManager) context.getSystemService(TELEPHONY_SERVICE);
-        mTelephonyMgr.listen(mPhoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
     }
 
     public static ApplozicAudioManager getInstance(Context context) {

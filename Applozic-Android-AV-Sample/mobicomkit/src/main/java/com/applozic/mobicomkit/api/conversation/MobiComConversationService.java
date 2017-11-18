@@ -16,6 +16,7 @@ import com.applozic.mobicomkit.api.attachment.FileClientService;
 import com.applozic.mobicomkit.api.attachment.FileMeta;
 import com.applozic.mobicomkit.api.conversation.database.MessageDatabaseService;
 import com.applozic.mobicomkit.api.conversation.service.ConversationService;
+import com.applozic.mobicomkit.api.people.UserIntentService;
 import com.applozic.mobicomkit.broadcast.BroadcastService;
 import com.applozic.mobicomkit.channel.service.ChannelService;
 import com.applozic.mobicomkit.contact.AppContactService;
@@ -70,7 +71,8 @@ public class MobiComConversationService {
     public void sendMessage(Message message, Class messageIntentClass) {
         Intent intent = new Intent(context, messageIntentClass);
         intent.putExtra(MobiComKitConstants.MESSAGE_JSON_INTENT, GsonUtils.getJsonFromObject(message, Message.class));
-        context.startService(intent);
+        MessageIntentService.enqueueWork(context,intent);
+
     }
 
     public List<Message> getLatestMessagesGroupByPeople() {
@@ -475,11 +477,11 @@ public class MobiComConversationService {
                 messageDatabaseService.updateReadStatusForChannel(String.valueOf(newChannel.getKey()));
             }
 
-            Intent intent = new Intent(context, ConversationReadService.class);
-            intent.putExtra(ConversationReadService.CONTACT, contact);
-            intent.putExtra(ConversationReadService.CHANNEL, channel);
-            intent.putExtra(ConversationReadService.UNREAD_COUNT, unreadCount);
-            context.startService(intent);
+            Intent intent = new Intent(context, UserIntentService.class);
+            intent.putExtra(UserIntentService.CONTACT, contact);
+            intent.putExtra(UserIntentService.CHANNEL, channel);
+            intent.putExtra(UserIntentService.UNREAD_COUNT, unreadCount);
+            UserIntentService.enqueueWork(context,intent);
         } catch (Exception e) {
         }
     }

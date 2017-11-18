@@ -1,14 +1,14 @@
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 25
-    buildToolsVersion "25.0.2"
+    compileSdkVersion 26
+    buildToolsVersion '26.0.2'
 
     defaultConfig {
         minSdkVersion 16
-        targetSdkVersion 25
+        targetSdkVersion 26
         versionCode 5
-        versionName "1.5"
+        versionName "1.6"
     }
     buildTypes {
         release {
@@ -26,13 +26,13 @@ android {
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
-    compile 'com.android.support:support-v4:25.3.1'
-    compile 'com.android.support:appcompat-v7:25.3.1'
-    compile "com.twilio:video-android:1.3.0"
-    //compile 'com.applozic.communication.uiwidget:mobicomkitui:5.1.5'
+    compile 'com.android.support:support-v4:26.1.0'
+    compile 'com.android.support:appcompat-v7:26.1.0'
+    compile "com.twilio:video-android:1.3.7"
+    //compile 'com.applozic.communication.uiwidget:mobicomkitui:5.2'
     compile project(':mobicomkitui')
-}
-/*ext {
+}/*
+ext {
     // Where you will see your artifact in Bintray's web interface
     // The "bintrayName" should match the name of the Bintray repro.
     bintrayRepo = 'maven'
@@ -46,7 +46,7 @@ dependencies {
     artifact = 'audiovideo'
 
     libraryDescription = 'Applozic Communication Chat/Messaging library with audio/video support'
-    libraryVersion = '1.5'
+    libraryVersion = '1.6'
 
     developerId = 'devashish'
     developerName = 'Applozic'
@@ -110,4 +110,5 @@ bintray {
             //}
         }
     }
-}*/
+}
+*/

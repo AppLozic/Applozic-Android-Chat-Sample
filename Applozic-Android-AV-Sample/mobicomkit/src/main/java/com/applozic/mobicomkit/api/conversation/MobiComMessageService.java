@@ -80,13 +80,13 @@ public class MobiComMessageService {
                 if (Message.MetaDataType.HIDDEN.getValue().equals(messageToProcess.getMetaDataValueForKey(Message.MetaDataType.KEY.getValue()))) {
                     intentService.putExtra(MobiComKitConstants.MESSAGE, messageToProcess);
                     intentService.putExtra(MobiComKitConstants.HIDDEN, true);
-                    context.startService(intentService);
+                    MessageIntentService.enqueueWork(context,intentService);
                     return null;
                 } else if (Message.MetaDataType.PUSHNOTIFICATION.getValue().equals(messageToProcess.getMetaDataValueForKey(Message.MetaDataType.KEY.getValue()))) {
                     BroadcastService.sendNotificationBroadcast(context, messageToProcess);
                     intentService.putExtra(MobiComKitConstants.MESSAGE, messageToProcess);
                     intentService.putExtra(MobiComKitConstants.PUSH_NOTIFICATION, true);
-                    context.startService(intentService);
+                    MessageIntentService.enqueueWork(context,intentService);
                     return null;
                 }
             }

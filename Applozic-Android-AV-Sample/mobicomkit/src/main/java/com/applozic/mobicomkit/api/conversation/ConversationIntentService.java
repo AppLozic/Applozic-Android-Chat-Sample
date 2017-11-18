@@ -1,7 +1,10 @@
 package com.applozic.mobicomkit.api.conversation;
 
 import android.app.IntentService;
+import android.content.Context;
 import android.content.Intent;
+import android.support.annotation.NonNull;
+import android.support.v4.app.JobIntentService;
 
 import com.applozic.mobicomkit.api.account.user.UserService;
 import com.applozic.mobicommons.commons.core.utils.Utils;
@@ -13,15 +16,24 @@ import java.util.List;
 /**
  * Created by devashish on 15/12/13.
  */
-public class ConversationIntentService extends IntentService {
+public class ConversationIntentService extends JobIntentService {
 
     public static final String SYNC = "AL_SYNC";
     private static final String TAG = "ConversationIntent";
     private static final int PRE_FETCH_MESSAGES_FOR = 6;
     private MobiComMessageService mobiComMessageService;
 
-    public ConversationIntentService() {
-        super("ConversationIntent");
+
+    /**
+     * Unique job ID for this service.
+     */
+    static final int JOB_ID = 1000;
+
+    /**
+     * Convenience method for enqueuing work in to this service.
+     */
+    static public void enqueueWork(Context context, Intent work) {
+        enqueueWork(context, ConversationIntentService.class, JOB_ID, work);
     }
 
     @Override
@@ -31,7 +43,7 @@ public class ConversationIntentService extends IntentService {
     }
 
     @Override
-    protected void onHandleIntent(Intent intent) {
+    protected void onHandleWork(@NonNull Intent intent) {
         if (intent == null) {
             return;
         }

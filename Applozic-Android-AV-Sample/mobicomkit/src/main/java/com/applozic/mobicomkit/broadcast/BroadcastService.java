@@ -110,13 +110,12 @@ public class BroadcastService {
         sendBroadcast(context, intentDelete);
     }
 
+
     public static void sendNotificationBroadcast(Context context, Message message) {
         Utils.printLog(context,TAG, "Sending notification broadcast....");
-        Intent notificationIntent = new Intent();
-        notificationIntent.putExtra(MobiComKitConstants.MESSAGE_JSON_INTENT, GsonUtils.getJsonFromObject(message, Message.class));
-        notificationIntent.setAction(Utils.getMetaDataValue(context.getApplicationContext(), PACKAGE_NAME) + ".send.notification");
-        context.sendBroadcast(notificationIntent);
+        PushNotificationDispatcher.scheduleJob(context, message);
     }
+
 
     public static void sendUpdateLastSeenAtTimeBroadcast(Context context, String action, String contactId) {
         Utils.printLog(context,TAG, "Sending lastSeenAt broadcast....");

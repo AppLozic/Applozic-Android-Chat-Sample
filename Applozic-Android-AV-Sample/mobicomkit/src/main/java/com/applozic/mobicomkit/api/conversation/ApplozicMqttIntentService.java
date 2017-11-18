@@ -1,7 +1,10 @@
 package com.applozic.mobicomkit.api.conversation;
 
 import android.app.IntentService;
+import android.content.Context;
 import android.content.Intent;
+import android.support.annotation.NonNull;
+import android.support.v4.app.JobIntentService;
 import android.text.TextUtils;
 
 import com.applozic.mobicomkit.api.ApplozicMqttService;
@@ -12,7 +15,7 @@ import com.applozic.mobicommons.people.contact.Contact;
 /**
  * Created by sunil on 30/12/15.
  */
-public class ApplozicMqttIntentService extends IntentService {
+public class ApplozicMqttIntentService extends JobIntentService {
     /**
      * Creates an IntentService.  Invoked by your subclass's constructor.
      *
@@ -30,12 +33,21 @@ public class ApplozicMqttIntentService extends IntentService {
     public static final String TYPING = "typing";
     public static final String STOP_TYPING = "STOP_TYPING";
 
-    public ApplozicMqttIntentService() {
-        super(TAG);
+    /**
+     * Unique job ID for this service.
+     */
+    static final int JOB_ID = 1110;
+
+    /**
+     * Convenience method for enqueuing work in to this service.
+     */
+    static public void enqueueWork(Context context, Intent work) {
+        enqueueWork(context, ApplozicMqttIntentService.class, JOB_ID, work);
     }
 
+
     @Override
-    protected void onHandleIntent(Intent intent) {
+    protected void onHandleWork(@NonNull Intent intent) {
         if (intent == null) {
             return;
         }

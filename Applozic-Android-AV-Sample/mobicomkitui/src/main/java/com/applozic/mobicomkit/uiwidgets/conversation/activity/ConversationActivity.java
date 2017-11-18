@@ -249,7 +249,7 @@ public class ConversationActivity extends AppCompatActivity implements MessageCo
         Intent intent = new Intent(this, ApplozicMqttIntentService.class);
         intent.putExtra(ApplozicMqttIntentService.USER_KEY_STRING, userKeyString);
         intent.putExtra(ApplozicMqttIntentService.DEVICE_KEY_STRING, deviceKeyString);
-        startService(intent);
+        ApplozicMqttIntentService.enqueueWork(this,intent);
     }
 
     @Override
@@ -258,7 +258,7 @@ public class ConversationActivity extends AppCompatActivity implements MessageCo
         LocalBroadcastManager.getInstance(this).registerReceiver(mobiComKitBroadcastReceiver, BroadcastService.getIntentFilter());
         Intent subscribeIntent = new Intent(this, ApplozicMqttIntentService.class);
         subscribeIntent.putExtra(ApplozicMqttIntentService.SUBSCRIBE, true);
-        startService(subscribeIntent);
+        ApplozicMqttIntentService.enqueueWork(this,subscribeIntent);
 
         if (!Utils.isInternetAvailable(getApplicationContext())) {
             String errorMessage = getResources().getString(R.string.internet_connection_not_available);
@@ -403,7 +403,7 @@ public class ConversationActivity extends AppCompatActivity implements MessageCo
         if (!takeOrder) {
             Intent lastSeenStatusIntent = new Intent(this, UserIntentService.class);
             lastSeenStatusIntent.putExtra(UserIntentService.USER_LAST_SEEN_AT_STATUS, true);
-            startService(lastSeenStatusIntent);
+            UserIntentService.enqueueWork(this,lastSeenStatusIntent);
         }
 
         if (ApplozicClient.getInstance(this).isAccountClosed() || ApplozicClient.getInstance(this).isNotAllowed()) {
@@ -441,8 +441,13 @@ public class ConversationActivity extends AppCompatActivity implements MessageCo
         try {
             if (intent.getExtras() != null) {
                 BroadcastService.setContextBasedChat(intent.getExtras().getBoolean(ConversationUIService.CONTEXT_BASED_CHAT));
+                if (BroadcastService.isIndividual() && intent.getExtras().getBoolean(MobiComKitConstants.QUICK_LIST)) {
+                    setSearchListFragment(quickConversationFragment);
+                    addFragment(this, quickConversationFragment, ConversationUIService.QUICK_CONVERSATION_FRAGMENT);
+                } else {
+                    conversationUIService.checkForStartNewConversation(intent);
+                }
             }
-            conversationUIService.checkForStartNewConversation(intent);
         } catch (Exception e) {
             e.printStackTrace();
         }
