@@ -16,6 +16,7 @@ public class ChannelMetadata extends JsonMarker {
     public final static String GROUP_LEFT_MESSAGE = "GROUP_LEFT_MESSAGE";
     public final static String DELETED_GROUP_MESSAGE = "DELETED_GROUP_MESSAGE";
     public final static String HIDE_METADATA_NOTIFICATION = "HIDE";
+    public final static String MUTE = "MUTE";
 
     public static final String ADMIN_NAME = ":adminName";
     public static final String GROUP_NAME = ":groupName";
@@ -30,6 +31,7 @@ public class ChannelMetadata extends JsonMarker {
     private String groupLeftMessage;
     private String deletedGroupMessage;
     private boolean hideMetaDataNotification;
+    private boolean defaultMute;
 
 
     public String getCreateGroupMessage() {
@@ -102,5 +104,13 @@ public class ChannelMetadata extends JsonMarker {
 
     public void setHideMetaDataNotification(boolean hideMetaDataNotification) {
         this.hideMetaDataNotification = hideMetaDataNotification;
+    }
+
+    public boolean isDefaultMute() {
+        return defaultMute;
+    }
+
+    public void setDefaultMute(boolean defaultMute) {
+        this.defaultMute = defaultMute;
     }
 }

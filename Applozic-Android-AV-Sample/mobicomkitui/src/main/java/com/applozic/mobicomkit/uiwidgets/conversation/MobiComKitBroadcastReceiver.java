@@ -40,7 +40,7 @@ public class MobiComKitBroadcastReceiver extends BroadcastReceiver {
         if (!TextUtils.isEmpty(messageJson)) {
             message = (Message) GsonUtils.getObjectFromJson(messageJson, Message.class);
         }
-        Utils.printLog(context,TAG, "Received broadcast, action: " + action + ", message: " + message);
+        Utils.printLog(context, TAG, "Received broadcast, action: " + action + ", message: " + message);
 
         if (message != null && !message.isSentToMany()) {
             conversationUIService.addMessage(message);
@@ -112,6 +112,10 @@ public class MobiComKitBroadcastReceiver extends BroadcastReceiver {
             conversationUIService.updateConversationRead(currentId, isGroup);
         } else if (BroadcastService.INTENT_ACTIONS.UPDATE_USER_DETAIL.toString().equals(action)) {
             conversationUIService.updateUserInfo(intent.getStringExtra("contactId"));
+        } else if (BroadcastService.INTENT_ACTIONS.MESSAGE_METADATA_UPDATE.toString().equals(action)) {
+            conversationUIService.updateMessageMetadata(keyString);
+        } else if (BroadcastService.INTENT_ACTIONS.MUTE_USER_CHAT.toString().equals(action)) {
+            conversationUIService.muteUserChat(intent.getBooleanExtra("mute", false), intent.getStringExtra("userId"));
         }
     }
 }

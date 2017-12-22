@@ -23,6 +23,8 @@ import android.util.Log;
 
 import com.applozic.mobicomkit.api.conversation.Message;
 
+import com.applozic.mobicomkit.exception.ApplozicException;
+import com.applozic.mobicomkit.listners.MediaDownloadProgressHandler;
 import com.applozic.mobicommons.commons.image.PhotoDecodeRunnable;
 import com.applozic.mobicommons.commons.image.PhotoDecodeRunnable.TaskRunnableDecodeMethods;
 import com.applozic.mobicommons.file.FileUtils;
@@ -82,6 +84,7 @@ public class AttachmentTask implements
     // The Thread on which this task is currently running.
     private Thread mCurrentThread;
     private Message message;
+    private MediaDownloadProgressHandler mediaDownloadProgressHandler;
 
     /**
      * Creates an PhotoTask containing a download object and a decoder object.
@@ -108,18 +111,20 @@ public class AttachmentTask implements
         sPhotoManager = photoManager;
 
         // Gets the URL for the View
-        mImageURL = photoView.getImageUrl();
-        message = photoView.getMessage();
-        // Instantiates the weak reference to the incoming view
-        setAttachementView(photoView);
+        if (photoView != null) {
+            mImageURL = photoView.getImageUrl();
+            message = photoView.getMessage();
+            // Instantiates the weak reference to the incoming view
+            setAttachementView(photoView);
 
-        // Sets the cache flag to the input argument
-        mCacheEnabled = cacheFlag;
+            // Sets the cache flag to the input argument
+            mCacheEnabled = cacheFlag;
 
-        // Gets the width and height of the provided ImageView
-        mTargetWidth = photoView.getWidth();
-        mTargetHeight = photoView.getHeight();
-        context = photoView.getContext().getApplicationContext();
+            // Gets the width and height of the provided ImageView
+            mTargetWidth = photoView.getWidth();
+            mTargetHeight = photoView.getHeight();
+            context = photoView.getContext().getApplicationContext();
+        }
 
     }
 
@@ -149,6 +154,12 @@ public class AttachmentTask implements
         mImageWeakRef = new WeakReference<AttachmentView>(photoView);
         this.message = photoView.getMessage();
         this.context = photoView.getContext();
+    }
+
+    public void setAttachment(Message message, MediaDownloadProgressHandler handler, Context context) {
+        this.message = message;
+        this.mediaDownloadProgressHandler = handler;
+        this.context = context.getApplicationContext();
     }
 
     public void setAttachementViewNew(AttachmentViewProperties photoView) {
@@ -205,6 +216,11 @@ public class AttachmentTask implements
     @Override
     public Context getContext() {
         return context.getApplicationContext();
+    }
+
+    @Override
+    public MediaDownloadProgressHandler getDownloadHandler() {
+        return mediaDownloadProgressHandler;
     }
 
     @Override
@@ -320,6 +336,9 @@ public class AttachmentTask implements
                 sPhotoManager.attachmentTaskList.remove(this);
                 break;
             case AttachmentDownloader.HTTP_STATE_FAILED:
+                if (mediaDownloadProgressHandler != null) {
+                    mediaDownloadProgressHandler.onCompleted(null,new ApplozicException("Download failed"));
+                }
                 outState = AttachmentManager.DOWNLOAD_FAILED;
                 sPhotoManager.attachmentInProgress.remove(getMessage().getKeyString());
                 sPhotoManager.attachmentTaskList.remove(this);

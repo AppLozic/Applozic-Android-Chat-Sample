@@ -144,12 +144,13 @@
     <string name="video_message">Video Message</string>
     <string name="share_contact">Share Contact</string>
     <string name="attach_price">Attach price</string>
-    <string name="location">:location</string>
-    <string name="file">:file</string>
-    <string name="audio">:audio</string>
-    <string name="camera">:camera</string>
-    <string name="video">:video</string>
-    <string name="contact">:contact</string>
+    <string name="al_location">:location</string>
+    <string name="al_file">:file</string>
+    <string name="al_audio">:audio</string>
+    <string name="al_camera">:camera</string>
+    <string name="al_video">:video</string>
+    <string name="al_contact">:contact</string>
+    <string name="al_price">:price</string>
     <string name="current_location">Current Location</string>
     <string name="price">Price</string>
     <string name="status">status</string>
@@ -198,6 +199,7 @@
     <string name="success">success</string>
     <string name="error">error</string>
     <string name="mute_group_for">Mute Group For..</string>
+    <string name="mute_user_for">Mute user for..</string>
     <string name="eight_Hours">8 Hours</string>
     <string name="one_week">1 Week </string>
     <string name="one_year"> 1 Year </string>

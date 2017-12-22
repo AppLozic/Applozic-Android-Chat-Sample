@@ -65,6 +65,9 @@ public class MobiComUserPreference {
     private static String CONTACTS_GROUP_ID = "CONTACTS_GROUP_ID";
     private static String CONTACT_GROUP_ID_LISTS = "contactGroupIdLists";
     private static String IS_CONTACT_GROUP_NAME_LIST = "isContactGroupNameList";
+    private static String last_sync_time_for_metadata_update = "lastSyncTimeForMetadataUpdate";
+    private static String START_TIME_FOR_MESSAGE_LIST_SCROLL = "startTimeForMessageListScroll";
+    private static String USER_ROLE_TYPE = "userRoleType";
 
     public SharedPreferences sharedPreferences;
     private Context context;
@@ -384,6 +387,14 @@ public class MobiComUserPreference {
 
     }
 
+    public void setLastSyncTimeForMetadataUpdate(String lastSyncTime) {
+        sharedPreferences.edit().putString(last_sync_time_for_metadata_update, lastSyncTime).commit();
+    }
+
+    public String getLastSyncTimeForMetadataUpdate() {
+        return sharedPreferences.getString(last_sync_time_for_metadata_update, null);
+    }
+
     public void setCompressedImageSizeInMB(int maxSize) {
 
         sharedPreferences.edit().putInt(max_compressed_image_size, maxSize).commit();
@@ -561,5 +572,21 @@ public class MobiComUserPreference {
 
     public void setIsContactGroupNameList(boolean isContactGroupNameList) {
         sharedPreferences.edit().putBoolean(IS_CONTACT_GROUP_NAME_LIST, isContactGroupNameList).commit();
+    }
+
+    public void setStartTimeForPagination(Long startTime) {
+        sharedPreferences.edit().putLong(START_TIME_FOR_MESSAGE_LIST_SCROLL, startTime).commit();
+    }
+
+    public Long getStartTimeForPagination() {
+        return sharedPreferences.getLong(START_TIME_FOR_MESSAGE_LIST_SCROLL, 0);
+    }
+
+    public void setUserRoleType(Short roleType) {
+        sharedPreferences.edit().putInt(USER_ROLE_TYPE, roleType).commit();
+    }
+
+    public Short getUserRoleType(){
+        return Short.valueOf((short) sharedPreferences.getInt(USER_ROLE_TYPE,0));
     }
 }

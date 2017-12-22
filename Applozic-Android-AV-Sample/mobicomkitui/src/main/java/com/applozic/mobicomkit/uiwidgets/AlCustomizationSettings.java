@@ -1,5 +1,6 @@
 package com.applozic.mobicomkit.uiwidgets;
 
+import com.applozic.mobicomkit.uiwidgets.conversation.MobicomMessageTemplate;
 import com.applozic.mobicommons.json.JsonMarker;
 
 import java.util.Map;
@@ -80,9 +81,11 @@ public class AlCustomizationSettings extends JsonMarker {
     private boolean deleteOption = true;
     private boolean blockOption = true;
     private boolean muteOption = true;
+    private MobicomMessageTemplate messageTemplate;
     private String logoutPackageName;
     private boolean logoutOption = false;
     private int defaultGroupType = 2;
+    private boolean muteUserChatOption = false;
 
     private int totalRegisteredUserToFetch = 100;
     private int maxAttachmentAllowed = 5;
@@ -473,6 +476,14 @@ public class AlCustomizationSettings extends JsonMarker {
         return replyMessageLayoutReceivedMessageBackground;
     }
 
+    public void setUserChatMuteOption(boolean muteUserChatOption) {
+        this.muteUserChatOption = muteUserChatOption;
+    }
+
+    public boolean isMuteUserChatOption() {
+        return muteUserChatOption;
+    }
+
     public boolean isGroupInfoScreenVisible() {
         return groupInfoScreenVisible;
     }
@@ -499,6 +510,14 @@ public class AlCustomizationSettings extends JsonMarker {
 
     public void setDefaultGroupType(int defaultGroupType) {
         this.defaultGroupType = defaultGroupType;
+    }
+
+    public void setMessageTemplate(MobicomMessageTemplate messageTemplate) {
+        this.messageTemplate = messageTemplate;
+    }
+
+    public MobicomMessageTemplate getMessageTemplate() {
+        return messageTemplate;
     }
 
     @Override

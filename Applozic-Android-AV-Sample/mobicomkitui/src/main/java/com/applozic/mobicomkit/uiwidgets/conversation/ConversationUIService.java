@@ -736,6 +736,16 @@ public class ConversationUIService {
 
     }
 
+    public void updateMessageMetadata(String keyString) {
+        getConversationFragment().updateMessageMetadata(keyString);
+    }
+
+    public void muteUserChat(boolean mute, String userId) {
+        if (getConversationFragment() != null && getConversationFragment().getContact() != null && getConversationFragment().getContact().getUserId().equals(userId)) {
+            getConversationFragment().muteUser(mute);
+        }
+    }
+
 
     public void startMessageInfoFragment(String messageJson) {
 

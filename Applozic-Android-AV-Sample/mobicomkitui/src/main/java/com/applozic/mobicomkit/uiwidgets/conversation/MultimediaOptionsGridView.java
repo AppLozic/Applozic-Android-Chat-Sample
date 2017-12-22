@@ -39,22 +39,22 @@ public class MultimediaOptionsGridView {
     }
 
     public void executeMethod(String key) {
-        if (key.equals(context.getResources().getString(R.string.location))) {
+        if (key.equals(context.getResources().getString(R.string.al_location))) {
             ((ConversationActivity) context).processLocation();
-        } else if (key.equals(context.getString(R.string.camera))) {
+        } else if (key.equals(context.getString(R.string.al_camera))) {
             ((ConversationActivity) context).isTakePhoto(true);
             ((ConversationActivity) context).processCameraAction();
-        } else if (key.equals(context.getString(R.string.file))) {
+        } else if (key.equals(context.getString(R.string.al_file))) {
             ((ConversationActivity) context).isAttachment(true);
             ((ConversationActivity) context).processAttachment();
-        } else if (key.equals(context.getString(R.string.audio))) {
+        } else if (key.equals(context.getString(R.string.al_audio))) {
             ((ConversationActivity) context).showAudioRecordingDialog();
-        } else if (key.equals(context.getString(R.string.video))) {
+        } else if (key.equals(context.getString(R.string.al_video))) {
             ((ConversationActivity) context).isTakePhoto(false);
             ((ConversationActivity) context).processVideoRecording();
-        } else if (key.equals(context.getString(R.string.contact))) {
+        } else if (key.equals(context.getString(R.string.al_contact))) {
             ((ConversationActivity) context).processContact();
-        } else if (key.equals(context.getString(R.string.contact))) {
+        } else if (key.equals(context.getString(R.string.al_price))) {
             new ConversationUIService(context).sendPriceMessage();
         }
         multimediaOptions.setVisibility(View.GONE);

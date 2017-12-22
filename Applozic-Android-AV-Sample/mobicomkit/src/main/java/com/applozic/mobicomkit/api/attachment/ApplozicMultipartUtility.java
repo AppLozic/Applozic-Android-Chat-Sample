@@ -3,6 +3,8 @@ package com.applozic.mobicomkit.api.attachment;
 import android.content.Context;
 
 import com.applozic.mobicomkit.api.HttpRequestUtils;
+import com.applozic.mobicomkit.exception.ApplozicException;
+import com.applozic.mobicomkit.listners.MediaUploadProgressHandler;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -44,7 +46,7 @@ public class ApplozicMultipartUtility {
     }
 
 
-    public void addFilePart(String fieldName, File uploadFile)
+    public void addFilePart(String fieldName, File uploadFile, MediaUploadProgressHandler handler)
             throws IOException, InterruptedException {
         String fileName = uploadFile.getName();
         writer.append("--" + boundary).append(LINE_FEED);
@@ -63,11 +65,32 @@ public class ApplozicMultipartUtility {
         FileInputStream inputStream = new FileInputStream(uploadFile);
         byte[] buffer = new byte[4096];
         int bytesRead = -1;
+        long totalRead = 0;
+        int previousPercent = 0;
+        long totalSize = uploadFile.length();
+        if (handler != null) {
+            handler.onUploadStarted(null);
+        }
         while ((bytesRead = inputStream.read(buffer)) != -1) {
             if (Thread.interrupted()) {
                 throw new InterruptedException();
             }
-            outputStream.write(buffer, 0, bytesRead);
+            try {
+                outputStream.write(buffer, 0, bytesRead);
+                totalRead += bytesRead;
+                int percentage = (int) ((totalRead / (float) totalSize) * 100);
+
+                if (percentage != previousPercent) {
+                    if (handler != null) {
+                        handler.onProgressUpdate(percentage, null);
+                    }
+                    previousPercent = percentage;
+                }
+            } catch (Exception e) {
+                if (handler != null) {
+                    handler.onCompleted(new ApplozicException(e.getMessage()));
+                }
+            }
         }
         outputStream.flush();
         inputStream.close();

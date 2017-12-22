@@ -110,7 +110,6 @@ public class ConversationFragment extends MobiComConversationFragment implements
         multimediaPopupGrid.setVisibility(View.GONE);
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(getActivity(),
                 R.array.secret_message_timer_array, R.layout.mobiframework_custom_spinner);
-
         adapter.setDropDownViewResource(R.layout.mobiframework_custom_spinner);
 
         inputMethodManager = (InputMethodManager) getActivity().getSystemService(Activity.INPUT_METHOD_SERVICE);
@@ -145,7 +144,7 @@ public class ConversationFragment extends MobiComConversationFragment implements
                                 processAttachButtonClick(view);
                             }
                         }
-                    }else {
+                    } else {
                         processAttachButtonClick(view);
                     }
                 } else if (contact != null) {
@@ -205,6 +204,12 @@ public class ConversationFragment extends MobiComConversationFragment implements
     }
 
     private void populateAttachmentOptions() {
+
+        if (attachmentKey != null && attachmentKey.size() > 0) {
+            attachmentKey.clear();
+            attachmentText.clear();
+            attachmentIcon.clear();
+        }
 
         String[] allKeys = getResources().getStringArray(R.array.multimediaOptions_without_price_key);
         String[] allValues = getResources().getStringArray(R.array.multimediaOptions_without_price_text);

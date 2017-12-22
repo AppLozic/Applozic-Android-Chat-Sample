@@ -28,7 +28,7 @@ public class BroadcastService {
     public static boolean callRinging = false;
     public static int lastIndexForChats = 0;
     private static boolean contextBasedChatEnabled = false;
-    public static String currentUserProfileUserId= null;
+    public static String currentUserProfileUserId = null;
 
     public static void selectMobiComKitAll() {
         currentUserId = MOBICOMKIT_ALL;
@@ -146,6 +146,15 @@ public class BroadcastService {
         sendBroadcast(context, intent);
     }
 
+    public static void updateMessageMetadata(Context context, String messageKey, String action) {
+        Utils.printLog(context, TAG, "Sending Message Metadata Update Broadcast for message key : " + messageKey);
+        Intent intent = new Intent();
+        intent.setAction(action);
+        intent.putExtra("keyString", messageKey);
+        intent.addCategory(Intent.CATEGORY_DEFAULT);
+        sendBroadcast(context, intent);
+    }
+
 
     public static void sendConversationReadBroadcast(Context context, String action, String currentId, boolean isGroup) {
         Utils.printLog(context,TAG, "Sending  Broadcast for conversation read ......");
@@ -157,8 +166,18 @@ public class BroadcastService {
         sendBroadcast(context, intent);
     }
 
-    public static void sendUpdateUserDetailBroadcast(Context context, String action, String contactId){
-        Utils.printLog(context,TAG, "Sending profileImage update....");
+    public static void sendMuteUserBroadcast(Context context, String action, boolean mute, String userId) {
+        Utils.printLog(context, TAG, "Sending Mute user Broadcast for user : " + userId + ", mute : " + mute);
+        Intent intent = new Intent();
+        intent.setAction(action);
+        intent.putExtra("mute", mute);
+        intent.putExtra("userId", userId);
+        intent.addCategory(Intent.CATEGORY_DEFAULT);
+        sendBroadcast(context, intent);
+    }
+
+    public static void sendUpdateUserDetailBroadcast(Context context, String action, String contactId) {
+        Utils.printLog(context, TAG, "Sending profileImage update....");
         Intent intent = new Intent();
         intent.setAction(action);
         intent.putExtra("contactId", contactId);
@@ -189,6 +208,8 @@ public class BroadcastService {
         intentFilter.addAction(INTENT_ACTIONS.UPDATE_TITLE_SUBTITLE.toString());
         intentFilter.addAction(INTENT_ACTIONS.CONVERSATION_READ.toString());
         intentFilter.addAction(INTENT_ACTIONS.UPDATE_USER_DETAIL.toString());
+        intentFilter.addAction(INTENT_ACTIONS.MESSAGE_METADATA_UPDATE.toString());
+        intentFilter.addAction(INTENT_ACTIONS.MUTE_USER_CHAT.toString());
         intentFilter.addCategory(Intent.CATEGORY_DEFAULT);
         return intentFilter;
     }
@@ -202,6 +223,6 @@ public class BroadcastService {
         SYNC_MESSAGE, DELETE_MESSAGE, DELETE_CONVERSATION, MESSAGE_DELIVERY, MESSAGE_DELIVERY_FOR_CONTACT, INSTRUCTION,
         UPLOAD_ATTACHMENT_FAILED, MESSAGE_ATTACHMENT_DOWNLOAD_DONE, MESSAGE_ATTACHMENT_DOWNLOAD_FAILD,
         UPDATE_LAST_SEEN_AT_TIME, UPDATE_TYPING_STATUS, MESSAGE_READ_AND_DELIVERED, MESSAGE_READ_AND_DELIVERED_FOR_CONTECT, CHANNEL_SYNC,
-        CONTACT_VERIFIED, NOTIFY_USER, MQTT_DISCONNECTED, UPDATE_CHANNEL_NAME, UPDATE_TITLE_SUBTITLE, CONVERSATION_READ,UPDATE_USER_DETAIL
+        CONTACT_VERIFIED, NOTIFY_USER, MQTT_DISCONNECTED, UPDATE_CHANNEL_NAME, UPDATE_TITLE_SUBTITLE, CONVERSATION_READ, UPDATE_USER_DETAIL, MESSAGE_METADATA_UPDATE, MUTE_USER_CHAT
     }
 }

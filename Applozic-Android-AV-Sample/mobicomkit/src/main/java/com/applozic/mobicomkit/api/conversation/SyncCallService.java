@@ -11,10 +11,13 @@ import com.applozic.mobicomkit.broadcast.BroadcastService;
 import com.applozic.mobicomkit.channel.service.ChannelService;
 import com.applozic.mobicomkit.contact.AppContactService;
 import com.applozic.mobicomkit.contact.BaseContactService;
+import com.applozic.mobicomkit.contact.database.ContactDatabase;
 import com.applozic.mobicommons.commons.core.utils.Utils;
 
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
 /**
  * Created by applozic on 12/2/15.
@@ -75,11 +78,34 @@ public class SyncCallService {
 
     public synchronized void syncMessages(String key) {
         if (!TextUtils.isEmpty(key) && mobiComMessageService.isMessagePresent(key)) {
-            Utils.printLog(context,TAG, "Message is already present, MQTT reached before GCM.");
+            Utils.printLog(context, TAG, "Message is already present, MQTT reached before GCM.");
         } else {
             Intent intent = new Intent(context, ConversationIntentService.class);
             intent.putExtra(ConversationIntentService.SYNC, true);
             ConversationIntentService.enqueueWork(context,intent);
+        }
+    }
+
+    public synchronized void syncMessageMetadataUpdate(String key, boolean isFromFcm) {
+        if (!TextUtils.isEmpty(key) && mobiComMessageService.isMessagePresent(key)) {
+            Utils.printLog(context, TAG, "Syncing updated message metadata from " + (isFromFcm ? "FCM" : "MQTT") + " for message key : " + key);
+            Intent intent = new Intent(context, ConversationIntentService.class);
+            intent.putExtra(ConversationIntentService.MESSAGE_METADATA_UPDATE, true);
+            context.startService(intent);
+        }
+    }
+
+    public synchronized void syncMutedUserList(boolean isFromFcm, String userId) {
+
+        if (userId == null) {
+            Utils.printLog(context, TAG, "Syncing muted user list from " + (isFromFcm ? "FCM" : "MQTT"));
+            Intent intent = new Intent(context, ConversationIntentService.class);
+            intent.putExtra(ConversationIntentService.MUTED_USER_LIST_SYNC, true);
+            context.startService(intent);
+        } else {
+            Utils.printLog(context, TAG, "Unmuting userId : " + userId + " from " + (isFromFcm ? "FCM" : "MQTT"));
+            new ContactDatabase(context).updateNotificationAfterTime(userId, Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTime().getTime());
+            BroadcastService.sendMuteUserBroadcast(context, BroadcastService.INTENT_ACTIONS.MUTE_USER_CHAT.toString(), false, userId);
         }
     }
 
@@ -144,7 +170,7 @@ public class SyncCallService {
     }
 
     public void syncUserDetail(String userId) {
-        messageClientService.processUserStatus(userId,true);
+        messageClientService.processUserStatus(userId, true);
     }
 
 }

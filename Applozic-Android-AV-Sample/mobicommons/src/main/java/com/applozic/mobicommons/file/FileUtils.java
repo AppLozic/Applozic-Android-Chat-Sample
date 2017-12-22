@@ -32,7 +32,6 @@ import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.provider.OpenableColumns;
-import android.support.v4.BuildConfig;
 import android.text.TextUtils;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
@@ -738,10 +737,6 @@ public class FileUtils {
             bitmap.compress(Bitmap.CompressFormat.JPEG, compressQuality, bmpStream);
             byte[] bmpPicByteArray = bmpStream.toByteArray();
             streamLength = bmpPicByteArray.length;
-            if (BuildConfig.DEBUG) {
-                Log.i("test upload", "Quality: " + compressQuality);
-                Log.i("test upload", "Size: " + streamLength);
-            }
             compressQuality -= 3;
 
         }

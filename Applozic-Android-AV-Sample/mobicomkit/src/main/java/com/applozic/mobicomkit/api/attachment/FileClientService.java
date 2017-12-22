@@ -10,12 +10,14 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.text.TextUtils;
 
+import com.applozic.mobicomkit.ApplozicClient;
 import com.applozic.mobicomkit.api.HttpRequestUtils;
 import com.applozic.mobicomkit.api.MobiComKitClientService;
 import com.applozic.mobicomkit.api.conversation.Message;
 import com.applozic.mobicomkit.api.conversation.database.MessageDatabaseService;
 import com.applozic.mobicomkit.api.conversation.service.ConversationService;
 import com.applozic.mobicomkit.feed.TopicDetail;
+import com.applozic.mobicomkit.listners.MediaUploadProgressHandler;
 import com.applozic.mobicommons.commons.core.utils.Utils;
 import com.applozic.mobicommons.commons.image.ImageUtils;
 import com.applozic.mobicommons.file.FileUtils;
@@ -49,6 +51,8 @@ public class FileClientService extends MobiComKitClientService {
     public static final String FILE_UPLOAD_URL = "/rest/ws/aws/file/url";
     public static final String IMAGE_DIR = "image";
     public static final String AL_UPLOAD_FILE_URL = "/rest/ws/upload/file";
+    public static final String CUSTOM_STORAGE_SERVICE_END_POINT = "/rest/ws/upload/image";
+    public static final String THUMBNAIL_URL = "/files/";
     private static final int MARK = 1024;
     private static final String TAG = "FileClientService";
     private static final String MAIN_FOLDER_META_DATA = "main_folder_name";
@@ -99,7 +103,15 @@ public class FileClientService extends MobiComKitClientService {
     }
 
     public String getFileUploadUrl() {
-        return FILE_BASE_URL + FILE_UPLOAD_URL;
+        if (ApplozicClient.getInstance(context).isCustomStorageServiceEnabled()) {
+            return getBaseUrl() + CUSTOM_STORAGE_SERVICE_END_POINT;
+        }
+
+        String fileUploadUrl = Utils.getMetaDataValue(context.getApplicationContext(), FILE_UPLOAD_METADATA_KEY);
+        if (!TextUtils.isEmpty(fileUploadUrl)) {
+            return getFileBaseUrl() + fileUploadUrl;
+        }
+        return getFileBaseUrl() + FILE_UPLOAD_URL;
     }
 
     public Bitmap loadThumbnailImage(Context context, Message message, int reqWidth, int reqHeight) {
@@ -117,7 +129,7 @@ public class FileClientService extends MobiComKitClientService {
                 try {
                     attachedImage = BitmapFactory.decodeFile(imageLocalPath);
                 } catch (Exception ex) {
-                    Utils.printLog(context,TAG, "File not found on local storage: " + ex.getMessage());
+                    Utils.printLog(context, TAG, "File not found on local storage: " + ex.getMessage());
                 }
             }
             if (attachedImage == null) {
@@ -129,7 +141,7 @@ public class FileClientService extends MobiComKitClientService {
                     imageLocalPath = ImageUtils.saveImageToInternalStorage(file, attachedImage);
 
                 } else {
-                    Utils.printLog(context,TAG, "Download is failed response code is ...." + connection.getResponseCode());
+                    Utils.printLog(context, TAG, "Download is failed response code is ...." + connection.getResponseCode());
                     return null;
                 }
             }
@@ -141,9 +153,9 @@ public class FileClientService extends MobiComKitClientService {
             attachedImage = BitmapFactory.decodeFile(imageLocalPath, options);
             return attachedImage;
         } catch (FileNotFoundException ex) {
-            Utils.printLog(context,TAG, "File not found on server: " + ex.getMessage());
+            Utils.printLog(context, TAG, "File not found on server: " + ex.getMessage());
         } catch (Exception ex) {
-            Utils.printLog(context,TAG, "Exception fetching file from server: " + ex.getMessage());
+            Utils.printLog(context, TAG, "Exception fetching file from server: " + ex.getMessage());
         }
 
         return null;
@@ -163,12 +175,16 @@ public class FileClientService extends MobiComKitClientService {
             String fileName = fileMeta.getName();
             file = FileClientService.getFilePath(fileName, context.getApplicationContext(), contentType);
             if (!file.exists()) {
-                connection = openHttpConnection(new MobiComKitClientService(context).getFileUrl() + fileMeta.getBlobKeyString());
+                if (ApplozicClient.getInstance(context).isCustomStorageServiceEnabled() && !TextUtils.isEmpty(message.getFileMetas().getUrl())) {
+                    connection = openHttpConnection(fileMeta.getUrl());
+                } else {
+                    connection = openHttpConnection(new MobiComKitClientService(context).getFileUrl() + fileMeta.getBlobKeyString());
+                }
                 if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
                     inputStream = connection.getInputStream();
                 } else {
                     //TODO: Error Handling...
-                    Utils.printLog(context,TAG, "Got Error response while uploading file : " + connection.getResponseCode());
+                    Utils.printLog(context, TAG, "Got Error response while uploading file : " + connection.getResponseCode());
                     return;
                 }
 
@@ -191,15 +207,15 @@ public class FileClientService extends MobiComKitClientService {
 
         } catch (FileNotFoundException ex) {
             ex.printStackTrace();
-            Utils.printLog(context,TAG, "File not found on server");
+            Utils.printLog(context, TAG, "File not found on server");
         } catch (Exception ex) {
             //If partial file got created delete it, we try to download it again
             if (file != null && file.exists()) {
-                Utils.printLog(context,TAG, " Exception occured while downloading :" + file.getAbsolutePath());
+                Utils.printLog(context, TAG, " Exception occured while downloading :" + file.getAbsolutePath());
                 file.delete();
             }
             ex.printStackTrace();
-            Utils.printLog(context,TAG, "Exception fetching file from server");
+            Utils.printLog(context, TAG, "Exception fetching file from server");
         }
     }
 
@@ -217,19 +233,23 @@ public class FileClientService extends MobiComKitClientService {
             return attachedImage;
         } catch (FileNotFoundException ex) {
             ex.printStackTrace();
-            Utils.printLog(context,TAG, "File not found on server: " + ex.getMessage());
+            Utils.printLog(context, TAG, "File not found on server: " + ex.getMessage());
         } catch (Exception ex) {
             ex.printStackTrace();
-            Utils.printLog(context,TAG, "Exception fetching file from server: " + ex.getMessage());
+            Utils.printLog(context, TAG, "Exception fetching file from server: " + ex.getMessage());
         }
 
         return null;
     }
 
-    public String uploadBlobImage(String path) throws UnsupportedEncodingException {
+    public String uploadBlobImage(String path, MediaUploadProgressHandler handler) throws UnsupportedEncodingException {
         try {
             ApplozicMultipartUtility multipart = new ApplozicMultipartUtility(getUploadKey(), "UTF-8", context);
-            multipart.addFilePart("files[]", new File(path));
+            if (ApplozicClient.getInstance(context).isCustomStorageServiceEnabled()) {
+                multipart.addFilePart("file", new File(path), handler);
+            } else {
+                multipart.addFilePart("files[]", new File(path), handler);
+            }
             return multipart.getResponse();
         } catch (Exception e) {
             e.printStackTrace();
@@ -238,7 +258,12 @@ public class FileClientService extends MobiComKitClientService {
     }
 
     public String getUploadKey() {
-        return httpRequestUtils.getResponse(getFileUploadUrl() + "?" + new Date().getTime(), "text/plain", "text/plain", true);
+        if (ApplozicClient.getInstance(context).isStorageServiceEnabled() || ApplozicClient.getInstance(context).isCustomStorageServiceEnabled() ) {
+            return getFileUploadUrl();
+        } else {
+            return httpRequestUtils.getResponse(getFileUploadUrl()
+                    + "?" + new Date().getTime(), "text/plain", "text/plain", true);
+        }
     }
 
     public Bitmap downloadBitmap(Contact contact, Channel channel) {
@@ -265,15 +290,15 @@ public class FileClientService extends MobiComKitClientService {
                     inputStream.allowMarksToExpire(true);
                     return attachedImage;
                 } else {
-                    Utils.printLog(context,TAG, "Download is failed response code is ...." + connection.getResponseCode());
+                    Utils.printLog(context, TAG, "Download is failed response code is ...." + connection.getResponseCode());
                 }
             }
         } catch (FileNotFoundException ex) {
             ex.printStackTrace();
-            Utils.printLog(context,TAG, "Image not found on server: " + ex.getMessage());
+            Utils.printLog(context, TAG, "Image not found on server: " + ex.getMessage());
         } catch (Exception ex) {
             ex.printStackTrace();
-            Utils.printLog(context,TAG, "Exception fetching file from server: " + ex.getMessage());
+            Utils.printLog(context, TAG, "Exception fetching file from server: " + ex.getMessage());
         } catch (Throwable t) {
 
         } finally {
@@ -332,7 +357,7 @@ public class FileClientService extends MobiComKitClientService {
     public String uploadProfileImage(String path) throws UnsupportedEncodingException {
         try {
             ApplozicMultipartUtility multipart = new ApplozicMultipartUtility(profileImageUploadURL(), "UTF-8", context);
-            multipart.addFilePart("file", new File(path));
+            multipart.addFilePart("file", new File(path), null);
             return multipart.getResponse();
         } catch (Exception e) {
             e.printStackTrace();
@@ -396,9 +421,9 @@ public class FileClientService extends MobiComKitClientService {
                 }
             }
         } catch (FileNotFoundException ex) {
-            Utils.printLog(context,TAG, "Image not found on server: " + ex.getMessage());
+            Utils.printLog(context, TAG, "Image not found on server: " + ex.getMessage());
         } catch (Exception ex) {
-            Utils.printLog(context,TAG, "Exception fetching file from server: " + ex.getMessage());
+            Utils.printLog(context, TAG, "Exception fetching file from server: " + ex.getMessage());
         } catch (Throwable t) {
 
         } finally {
@@ -440,5 +465,11 @@ public class FileClientService extends MobiComKitClientService {
 
             }
         }
+    }
+
+    public String getThumbnailUrl(String thumbnailUrl) {
+        return (ApplozicClient.getInstance(context).isStorageServiceEnabled() ?
+                (getFileBaseUrl() + THUMBNAIL_URL + thumbnailUrl) : thumbnailUrl);
+
     }
 }

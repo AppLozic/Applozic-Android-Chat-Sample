@@ -167,8 +167,8 @@ public class Channel extends JsonMarker {
 
     public boolean isNotificationMuted() {
         Date date = Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTime();
-        return (getNotificationAfterTime() != null) && (getNotificationAfterTime() - date.getTime() > 0);
-
+        return (((getNotificationAfterTime() != null) && (getNotificationAfterTime() - date.getTime() > 0))
+                || ((getNotificationAfterTime() == 0 && isGroupDefaultMuted())));
     }
 
     public boolean isDeleted() {
@@ -181,6 +181,11 @@ public class Channel extends JsonMarker {
 
     public void setMetadata(Map<String, String> metadata) {
         this.metadata = metadata;
+    }
+
+    public boolean isGroupDefaultMuted() {
+        return (getMetadata() != null && getMetadata().get(ChannelMetadata.MUTE) != null
+                && getMetadata().get(ChannelMetadata.MUTE).equalsIgnoreCase("true"));
     }
 
     @Override

@@ -9,7 +9,9 @@ import android.database.sqlite.SQLiteDatabase;
 import android.text.TextUtils;
 
 import com.applozic.mobicomkit.api.MobiComKitClientService;
+import com.applozic.mobicomkit.api.MobiComKitConstants;
 import com.applozic.mobicomkit.api.account.user.MobiComUserPreference;
+import com.applozic.mobicomkit.api.attachment.FileClientService;
 import com.applozic.mobicomkit.api.attachment.FileMeta;
 import com.applozic.mobicomkit.api.conversation.Message;
 import com.applozic.mobicomkit.broadcast.BroadcastService;
@@ -119,6 +121,7 @@ public class MessageDatabaseService {
             fileMeta.setSize(cursor.getInt(cursor.getColumnIndex("size")));
             fileMeta.setName(cursor.getString(cursor.getColumnIndex("name")));
             fileMeta.setContentType(cursor.getString(cursor.getColumnIndex("contentType")));
+            fileMeta.setUrl(cursor.getString(cursor.getColumnIndex("url")));
             message.setFileMetas(fileMeta);
         }
         return message;
@@ -449,6 +452,7 @@ public class MessageDatabaseService {
                 values.put("contentType", fileMeta.getContentType());
                 values.put("metaFileKeyString", fileMeta.getKeyString());
                 values.put("blobKeyString", fileMeta.getBlobKeyString());
+                values.put("url", fileMeta.getUrl());
             }
         }
         dbHelper.getWritableDatabase().update("sms", values, "id=" + messageId, null);
@@ -577,12 +581,15 @@ public class MessageDatabaseService {
             if (message.getFileMetas() != null) {
                 FileMeta fileMeta = message.getFileMetas();
                 if (fileMeta != null) {
-                    values.put("thumbnailUrl", fileMeta.getThumbnailUrl());
+                    String thumbnailUrl = new FileClientService(context).getThumbnailUrl(fileMeta.getThumbnailUrl());
+                    fileMeta.setThumbnailUrl(thumbnailUrl);
+                    values.put("thumbnailUrl", thumbnailUrl);
                     values.put("size", fileMeta.getSize());
                     values.put("name", fileMeta.getName());
                     values.put("contentType", fileMeta.getContentType());
                     values.put("metaFileKeyString", fileMeta.getKeyString());
                     values.put("blobKeyString", fileMeta.getBlobKeyString());
+                    values.put("url", fileMeta.getUrl());
                 }
             }
             id = database.insertOrThrow("sms", null, values);
@@ -1080,6 +1087,17 @@ public class MessageDatabaseService {
 
         return getMessageList(cursor);
 
+    }
+
+    public void updateMessageMetadata(String keyString, Map<String, String> metadata) {
+        ContentValues values = new ContentValues();
+
+        if (isMessagePresent(keyString)) {
+            values.put(MobiComDatabaseHelper.MESSAGE_METADATA, GsonUtils.getJsonFromObject(metadata, Map.class));
+            dbHelper.getWritableDatabase().update("sms", values, "keyString='" + keyString + "'", null);
+        }
+
+        dbHelper.close();
     }
 
 }

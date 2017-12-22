@@ -11,6 +11,7 @@ import com.applozic.mobicomkit.api.MobiComKitClientService;
 import com.applozic.mobicomkit.api.MobiComKitConstants;
 import com.applozic.mobicomkit.api.conversation.ApplozicMqttIntentService;
 import com.applozic.mobicomkit.api.conversation.database.MessageDatabaseService;
+import com.applozic.mobicomkit.api.notification.MuteUserResponse;
 import com.applozic.mobicomkit.database.MobiComDatabaseHelper;
 import com.applozic.mobicomkit.feed.ApiResponse;
 import com.applozic.mobicomkit.feed.SyncBlockUserApiResponse;
@@ -58,6 +59,8 @@ public class UserClientService extends MobiComKitClientService {
     public static final String UPDATE_USER_PASSWORD = "/rest/ws/user/update/password";
     public static final String USER_LOGOUT = "/rest/ws/device/logout";
     public static final String APPLICATION_INFO_UPDATE_URL = "/apps/customer/application/info/update";
+    private static final String MUTE_USER_URL = "/rest/ws/user/chat/mute";
+    private static final String GET_MUTED_USER_LIST = "/rest/ws/user/chat/mute/list";
     public static final int BATCH_SIZE = 60;
     private static final String TAG = "UserClientService";
     private HttpRequestUtils httpRequestUtils;
@@ -149,6 +152,14 @@ public class UserClientService extends MobiComKitClientService {
 
     public String getApplicationInfoUrl() {
         return getBaseUrl() + APPLICATION_INFO_UPDATE_URL;
+    }
+
+    private String getMuteUserUrl() {
+        return getBaseUrl() + MUTE_USER_URL;
+    }
+
+    private String getMutedUserListUrl() {
+        return getBaseUrl() + GET_MUTED_USER_LIST;
     }
 
     public ApiResponse logout() {
@@ -490,6 +501,43 @@ public class UserClientService extends MobiComKitClientService {
             e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
+        }
+        return null;
+    }
+
+    public ApiResponse muteUserNotifications(String userId, Long notificationAfterTime) {
+        if (userId == null || notificationAfterTime == null) {
+            return null;
+        }
+
+        JSONObject jsonFromObject = new JSONObject();
+
+        try {
+            String url = getMuteUserUrl() + "?userId=" + userId + "&notificationAfterTime=" + notificationAfterTime;
+            String response = httpRequestUtils.postData(url, "application/json", "application/json", jsonFromObject.toString());
+            Utils.printLog(context, TAG, "Mute user chat response : " + response);
+
+            if (!TextUtils.isEmpty(response)) {
+                return (ApiResponse) GsonUtils.getObjectFromJson(response, ApiResponse.class);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+        return null;
+    }
+
+    public MuteUserResponse[] getMutedUserList() {
+        try {
+            String response = httpRequestUtils.getResponse(getMutedUserListUrl(), "application/json", "application/json");
+            Utils.printLog(context, TAG, "Muted users list reponse : " + response);
+
+            if (!TextUtils.isEmpty(response)) {
+                return (MuteUserResponse[]) GsonUtils.getObjectFromJson(response, MuteUserResponse[].class);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
         return null;
     }

@@ -29,6 +29,8 @@ import android.view.View;
 import android.widget.Toast;
 
 import com.applozic.mobicomkit.broadcast.BroadcastService;
+import com.applozic.mobicomkit.exception.ApplozicException;
+import com.applozic.mobicomkit.listners.MediaDownloadProgressHandler;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -207,6 +209,41 @@ public class AttachmentManager {
                 AttachmentView localView = attachmentTask.getPhotoView();
 
                 // If this input view isn't null
+                if (attachmentTask != null && attachmentTask.getMessage() != null && attachmentTask.getDownloadHandler() != null && inputMessage != null) {
+                    switch (inputMessage.what) {
+
+                        case DOWNLOAD_STARTED:
+                            attachmentTask.getMessage().setAttDownloadInProgress(true);
+                            attachmentTask.getDownloadHandler().onDownloadStarted();
+                            break;
+                        case DOWNLOAD_COMPLETE:
+                            attachmentTask.getMessage().setAttDownloadInProgress(false);
+                            break;
+                        case DECODE_STARTED:
+                            break;
+                            /*
+                             * The decoding is done, so this sets the
+                             * ImageView's bitmap to the bitmap in the
+                             * incoming message
+                             */
+                        case TASK_COMPLETE:
+                            recycleTask(attachmentTask);
+                            break;
+                        // The download failed, sets the background color to dark red
+                        case DOWNLOAD_FAILED:
+                            //localView.setStatusResource(R.drawable.imagedownloadfailed);
+                            attachmentTask.getMessage().setAttDownloadInProgress(false);
+                            localView.getDownloadProgressLayout().setVisibility(View.GONE);
+                            attachmentTask.getDownloadHandler().onCompleted(null, new ApplozicException("Download failed"));
+                            // Attempts to re-use the Task object
+                            recycleTask(attachmentTask);
+                            break;
+                        default:
+                            // Otherwise, calls the super method
+                            super.handleMessage(inputMessage);
+                    }
+                }
+
                 if (localView != null) {
 
                     /*
@@ -413,6 +450,58 @@ public class AttachmentManager {
      * @param cacheFlag Determines if caching should be used
      * @return The task instance that will handle the work
      */
+    static public AttachmentTask startDownload(
+            AttachmentView imageView,
+            boolean cacheFlag, com.applozic.mobicomkit.api.conversation.Message message, MediaDownloadProgressHandler handler, Context context) {
+
+        /*
+         * Gets a task from the pool of tasks, returning null if the pool is empty
+         */
+        AttachmentTask downloadTask = sInstance.mPhotoTaskWorkQueue.poll();
+
+        // If the queue was empty, create a new task instead.
+        if (null == downloadTask) {
+            downloadTask = new AttachmentTask();
+        }
+
+        // Initializes the task
+        downloadTask.initializeDownloaderTask(AttachmentManager.sInstance, imageView, cacheFlag);
+
+        if (message != null && handler != null) {
+            downloadTask.setAttachment(message, handler, context);
+        }
+
+        // If image is already downloaded ...just pass-message as download complete
+        if (!downloadTask.getMessage().isAttachmentDownloaded()) {
+
+            /*
+             * "Executes" the tasks' download Runnable in order to download the image. If no
+             * Threads are available in the thread pool, the Runnable waits in the queue.
+             */
+            sInstance.mDownloadThreadPool.execute(downloadTask.getHTTPDownloadRunnable());
+            sInstance.attachmentInProgress.add(downloadTask.getMessage().getKeyString());
+            sInstance.attachmentTaskList.add(downloadTask);
+            // Sets the display to show that the image is queued for downloading and decoding.
+            if (imageView != null && imageView.getProressBar() != null) {
+                imageView.getProressBar().setVisibility(View.VISIBLE);
+            }
+            //imageView.setStatusResource(R.drawable.imagequeued);
+
+            // The image was cached, so no download is required.
+        } else {
+
+            /*
+             * Signals that the download is "complete", because the byte array already contains the
+             * undecoded image. The decoding starts.
+             */
+            //imageView.getProressBar().setVisibility(View.VISIBLE);
+            sInstance.handleState(downloadTask, DOWNLOAD_COMPLETE);
+        }
+
+        // Returns a task object, either newly-created or one from the task pool
+        return downloadTask;
+    }
+
     static public AttachmentTask startDownload(
             AttachmentView imageView,
             boolean cacheFlag) {

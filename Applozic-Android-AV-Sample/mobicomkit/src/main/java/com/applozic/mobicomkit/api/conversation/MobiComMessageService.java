@@ -20,6 +20,8 @@ import com.applozic.mobicomkit.broadcast.BroadcastService;
 import com.applozic.mobicomkit.channel.service.ChannelService;
 import com.applozic.mobicomkit.contact.AppContactService;
 import com.applozic.mobicomkit.contact.BaseContactService;
+import com.applozic.mobicomkit.contact.database.ContactDatabase;
+import com.applozic.mobicomkit.feed.ApiResponse;
 import com.applozic.mobicomkit.sync.SyncMessageFeed;
 
 import com.applozic.mobicommons.commons.core.utils.Support;
@@ -80,13 +82,13 @@ public class MobiComMessageService {
                 if (Message.MetaDataType.HIDDEN.getValue().equals(messageToProcess.getMetaDataValueForKey(Message.MetaDataType.KEY.getValue()))) {
                     intentService.putExtra(MobiComKitConstants.MESSAGE, messageToProcess);
                     intentService.putExtra(MobiComKitConstants.HIDDEN, true);
-                    MessageIntentService.enqueueWork(context,intentService);
+                    MessageIntentService.enqueueWork(context, intentService, null);
                     return null;
                 } else if (Message.MetaDataType.PUSHNOTIFICATION.getValue().equals(messageToProcess.getMetaDataValueForKey(Message.MetaDataType.KEY.getValue()))) {
                     BroadcastService.sendNotificationBroadcast(context, messageToProcess);
                     intentService.putExtra(MobiComKitConstants.MESSAGE, messageToProcess);
                     intentService.putExtra(MobiComKitConstants.PUSH_NOTIFICATION, true);
-                    MessageIntentService.enqueueWork(context,intentService);
+                    MessageIntentService.enqueueWork(context, intentService, null);
                     return null;
                 }
             }
@@ -138,13 +140,13 @@ public class MobiComMessageService {
                 MobiComUserPreference.getInstance(context).setNewMessageFlag(true);
             }
             if (message.isVideoNotificationMessage()) {
-                Utils.printLog(context,TAG, "Got notifications for Video call...");
+                Utils.printLog(context, TAG, "Got notifications for Video call...");
                 VideoCallNotificationHelper helper = new VideoCallNotificationHelper(context);
                 helper.handleVideoCallNotificationMessages(message);
 
             }
         }
-        Utils.printLog(context,TAG, "processing message: " + message);
+        Utils.printLog(context, TAG, "processing message: " + message);
         return message;
     }
 
@@ -193,7 +195,7 @@ public class MobiComMessageService {
             isContainerOpened = currentId.equals(BroadcastService.currentUserId);
         }
         if (message.isVideoNotificationMessage()) {
-            Utils.printLog(context,TAG, "Got notifications for Video call...");
+            Utils.printLog(context, TAG, "Got notifications for Video call...");
             BroadcastService.sendMessageUpdateBroadcast(context, BroadcastService.INTENT_ACTIONS.SYNC_MESSAGE.toString(), message);
 
             VideoCallNotificationHelper helper = new VideoCallNotificationHelper(context);
@@ -207,7 +209,10 @@ public class MobiComMessageService {
                 if (message.getTo() != null && message.getGroupId() == null) {
                     messageDatabaseService.updateContactUnreadCount(message.getTo());
                     BroadcastService.sendMessageUpdateBroadcast(context, BroadcastService.INTENT_ACTIONS.SYNC_MESSAGE.toString(), message);
-                    sendNotification(message);
+                    Contact contact = new ContactDatabase(context).getContactById(message.getTo());
+                    if (contact != null && !contact.isNotificationMuted()) {
+                        sendNotification(message);
+                    }
                 }
                 if (message.getGroupId() != null && !Message.GroupMessageMetaData.FALSE.getValue().equals(message.getMetaDataValueForKey(Message.GroupMessageMetaData.KEY.getValue()))) {
                     if (!Message.ContentType.CHANNEL_CUSTOM_MESSAGE.getValue().equals(message.getContentType())) {
@@ -227,8 +232,8 @@ public class MobiComMessageService {
             BroadcastService.sendMessageUpdateBroadcast(context, BroadcastService.INTENT_ACTIONS.SYNC_MESSAGE.toString(), message);
         }
 
-        Utils.printLog(context,TAG, "Updating delivery status: " + message.getPairedMessageKeyString() + ", " + userPreferences.getUserId() + ", " + userPreferences.getContactNumber());
-        messageClientService.updateDeliveryStatus(message.getPairedMessageKeyString(), userPreferences.getUserId(), userPreferences.getContactNumber());
+        Utils.printLog(context, TAG, "Updating delivery status: " + message.getPairedMessageKeyString() + ", " + userPreferences.getUserId() + ", " + userPreferences.getContactNumber());
+        //messageClientService.updateDeliveryStatus(message.getPairedMessageKeyString(), userPreferences.getUserId(), userPreferences.getContactNumber());
         return receiverContact;
     }
 
@@ -240,20 +245,20 @@ public class MobiComMessageService {
 
     public synchronized void syncMessages() {
         final MobiComUserPreference userpref = MobiComUserPreference.getInstance(context);
-        Utils.printLog(context,TAG, "Starting syncMessages for lastSyncTime: " + userpref.getLastSyncTime());
-        SyncMessageFeed syncMessageFeed = messageClientService.getMessageFeed(userpref.getLastSyncTime());
+        Utils.printLog(context, TAG, "Starting syncMessages for lastSyncTime: " + userpref.getLastSyncTime());
+        SyncMessageFeed syncMessageFeed = messageClientService.getMessageFeed(userpref.getLastSyncTime(), false);
         if (syncMessageFeed == null) {
             return;
         }
         if (syncMessageFeed != null && syncMessageFeed.getMessages() != null) {
-            Utils.printLog(context,TAG, "Got sync response " + syncMessageFeed.getMessages().size() + " messages.");
+            Utils.printLog(context, TAG, "Got sync response " + syncMessageFeed.getMessages().size() + " messages.");
             processUserDetailFromMessages(syncMessageFeed.getMessages());
         }
         // if regIdInvalid in syncrequest, tht means device reg with c2dm is no
         // more valid, do it again and make the sync request again
         if (syncMessageFeed != null && syncMessageFeed.isRegIdInvalid()
                 && Utils.hasFroyo()) {
-            Utils.printLog(context,TAG, "Going to call GCM device registration");
+            Utils.printLog(context, TAG, "Going to call GCM device registration");
             //Todo: Replace it with mobicomkit gcm registration
             // C2DMessaging.register(context);
         }
@@ -272,6 +277,23 @@ public class MobiComMessageService {
 
             updateDeliveredStatus(syncMessageFeed.getDeliveredMessageKeys());
             userpref.setLastSyncTime(String.valueOf(syncMessageFeed.getLastSyncTime()));
+        }
+    }
+
+    public synchronized void syncMessageForMetadataUpdate() {
+        final MobiComUserPreference userpref = MobiComUserPreference.getInstance(context);
+        SyncMessageFeed syncMessageFeed = messageClientService.getMessageFeed(userpref.getLastSyncTimeForMetadataUpdate(), true);
+
+        Utils.printLog(context, TAG, "\nStarting syncMessages for metadata update for lastSyncTime: " + userpref.getLastSyncTimeForMetadataUpdate());
+        if (syncMessageFeed != null && syncMessageFeed.getMessages() != null) {
+            userpref.setLastSyncTimeForMetadataUpdate(String.valueOf(syncMessageFeed.getLastSyncTime()));
+            List<Message> messageList = syncMessageFeed.getMessages();
+            for (final Message message : messageList) {
+                if (message != null) {
+                    new MessageDatabaseService(context).updateMessageMetadata(message.getKeyString(), message.getMetadata());
+                    BroadcastService.updateMessageMetadata(context, message.getKeyString(), BroadcastService.INTENT_ACTIONS.MESSAGE_METADATA_UPDATE.toString());
+                }
+            }
         }
     }
 
@@ -408,9 +430,9 @@ public class MobiComMessageService {
             }
 
             try {
-                messageClientService.sendMessageToServer(mTextMessageReceived);
+                messageClientService.sendMessageToServer(mTextMessageReceived, null);
             } catch (Exception ex) {
-                Utils.printLog(context,TAG, "Received message error " + ex.getMessage());
+                Utils.printLog(context, TAG, "Received message error " + ex.getMessage());
             }
             messageClientService.updateDeliveryStatus(smsKeyString, null, receiverNumber);
         } catch (JSONException e) {
@@ -446,7 +468,7 @@ public class MobiComMessageService {
 
     public synchronized void updateDeliveryStatusForContact(String contactId, boolean markRead) {
         int rows = messageDatabaseService.updateMessageDeliveryReportForContact(contactId, markRead);
-        Utils.printLog(context,TAG, "Updated delivery report of " + rows + " messages for contactId: " + contactId);
+        Utils.printLog(context, TAG, "Updated delivery report of " + rows + " messages for contactId: " + contactId);
 
         if (rows > 0) {
             String action = markRead ? BroadcastService.INTENT_ACTIONS.MESSAGE_READ_AND_DELIVERED_FOR_CONTECT.toString() :
@@ -457,7 +479,7 @@ public class MobiComMessageService {
 
     public synchronized void updateDeliveryStatus(String key, boolean markRead) {
         //Todo: Check if this is possible? In case the delivery report reaches before the sms is reached, then wait for the sms.
-        Utils.printLog(context,TAG, "Got the delivery report for key: " + key);
+        Utils.printLog(context, TAG, "Got the delivery report for key: " + key);
         String keyParts[] = key.split((","));
         Message message = messageDatabaseService.getMessage(keyParts[0]);
         if (message != null && (message.getStatus() != Message.Status.DELIVERED_AND_READ.getValue())) {
@@ -479,7 +501,7 @@ public class MobiComMessageService {
                 timer.schedule(new DisappearingMessageTask(context, new MobiComConversationService(context), message), message.getTimeToLive() * 60 * 1000);
             }
         } else if (message == null) {
-            Utils.printLog(context,TAG, "Message is not present in table, keyString: " + keyParts[0]);
+            Utils.printLog(context, TAG, "Message is not present in table, keyString: " + keyParts[0]);
         }
         map.remove(key);
         mtMessages.remove(key);
@@ -491,6 +513,10 @@ public class MobiComMessageService {
         }
 
         BroadcastService.sendLoadMoreBroadcast(context, true);
+    }
+
+    public ApiResponse getUpdateMessageMetadata(String key, Map<String, String> metadata) {
+        return messageClientService.updateMessageMetadata(key, metadata);
     }
 
     public void createEmptyMessage(Contact contact) {

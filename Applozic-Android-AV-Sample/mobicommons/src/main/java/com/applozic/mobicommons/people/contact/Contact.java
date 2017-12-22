@@ -10,8 +10,11 @@ import com.google.gson.annotations.SerializedName;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 
 /**
  * @author devashish
@@ -57,6 +60,10 @@ public class Contact extends JsonMarker {
     private short contactType;
     private Short userTypeId;
     private Long deletedAtTime;
+    private Long notificationAfterTime;
+    private Long lastMessageAtTime;
+    private Map<String, String> metadata;
+    private Short roleType;
 
     public Contact() {
 
@@ -298,6 +305,20 @@ public class Contact extends JsonMarker {
         return (deletedAtTime != null && deletedAtTime > 0);
     }
 
+    public Long getNotificationAfterTime() {
+        return notificationAfterTime;
+    }
+
+    public void setNotificationAfterTime(Long notificationAfterTime) {
+        this.notificationAfterTime = notificationAfterTime;
+    }
+
+    public boolean isNotificationMuted() {
+        Date date = Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTime();
+        return (getNotificationAfterTime() != null) && (getNotificationAfterTime() - date.getTime() > 0);
+
+    }
+
     public void processFullName(String fullName) {
         this.fullName = fullName;
         if (fullName != null) {
@@ -403,6 +424,30 @@ public class Contact extends JsonMarker {
         return !isBlocked() && !isBlockedBy() && isConnected();
     }
 
+    public Long getLastMessageAtTime() {
+        return lastMessageAtTime;
+    }
+
+    public void setLastMessageAtTime(Long lastMessageAtTime) {
+        this.lastMessageAtTime = lastMessageAtTime;
+    }
+
+    public Map<String, String> getMetadata() {
+        return metadata;
+    }
+
+    public void setMetadata(Map<String, String> metadata) {
+        this.metadata = metadata;
+    }
+
+    public void setRoleType(Short roleType) {
+        this.roleType = roleType;
+    }
+
+    public Short getRoleType() {
+        return roleType;
+    }
+
     @Override
     public String toString() {
         return "Contact{" +
@@ -428,9 +473,12 @@ public class Contact extends JsonMarker {
                 ", blocked=" + blocked +
                 ", blockedBy=" + blockedBy +
                 ", status='" + status + '\'' +
-                ", contactType=" + contactType +
-                ", userTypeId=" + userTypeId +
-                ", deletedAtTime=" + deletedAtTime +
+                ", contactType=" + contactType + '\'' +
+                ", userTypeId=" + userTypeId + '\'' +
+                ", deletedAtTime=" + deletedAtTime + '\''+
+                ", roleType=" + roleType +
+                ", lastMessagedAt=" + lastMessageAtTime +
+                ", metadata='" + metadata + '\''+
                 '}';
     }
 }

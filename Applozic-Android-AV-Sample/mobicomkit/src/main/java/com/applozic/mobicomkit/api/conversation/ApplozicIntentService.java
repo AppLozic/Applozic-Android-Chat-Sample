@@ -42,7 +42,6 @@ public class ApplozicIntentService extends JobIntentService {
     public void onCreate() {
         super.onCreate();
         this.messageClientService = new MessageClientService(this);
-        this.messageClientService = new MessageClientService(this);
         this.conversationService = new MobiComConversationService(this);
     }
 

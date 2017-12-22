@@ -1,14 +1,14 @@
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 26
-    buildToolsVersion '26.0.2'
+    compileSdkVersion 27
+    buildToolsVersion '27.0.1'
 
     defaultConfig {
         minSdkVersion 14
-        targetSdkVersion 26
+        targetSdkVersion 27
         versionCode 1
-        versionName "5.2"
+        versionName "5.4"
     }
     useLibrary 'org.apache.http.legacy'
     buildTypes {
@@ -39,17 +39,17 @@ dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile files('libs/org.eclipse.paho.android.service-1.0.2.jar')
     compile files('libs/org.eclipse.paho.client.mqttv3-1.0.2.jar')
-    compile 'com.android.support:appcompat-v7:26.1.0'
+    compile 'com.android.support:appcompat-v7:27.0.2'
     compile 'com.google.code.gson:gson:2.8.0'
     compile 'com.firebase:firebase-jobdispatcher:0.8.4'
     compile project(':mobicommons') //Note: use this for customization
-    //compile 'com.applozic.mobiframework:mobicommons:5.2' //Note: use this in case customization is not required
+    //compile 'com.applozic.mobiframework:mobicommons:5.4' //Note: use this in case customization is not required
 }
 
 
-/*
 
-ext {
+
+/*ext {
     // Where you will see your artifact in Bintray's web interface
     // The "bintrayName" should match the name of the Bintray repro.
     bintrayRepo = 'maven'
@@ -63,7 +63,7 @@ ext {
     artifact = 'mobicomkit'
 
     libraryDescription = 'Applozic Communication Chat/Messaging library'
-    libraryVersion = '5.2'
+    libraryVersion = '5.4'
 
     developerId = 'devashish'
     developerName = 'Applozic'
@@ -72,6 +72,5 @@ ext {
 
 
 apply from: 'https://raw.githubusercontent.com/attwellBrian/JCenter/master/installv1.gradle'
-apply from: 'https://raw.githubusercontent.com/attwellBrian/JCenter/master/bintrayv1.gradle'
-*/
+apply from: 'https://raw.githubusercontent.com/attwellBrian/JCenter/master/bintrayv1.gradle'*/
 

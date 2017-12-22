@@ -12,6 +12,8 @@ import com.applozic.mobicomkit.api.MobiComKitClientService;
 import com.applozic.mobicomkit.api.MobiComKitConstants;
 import com.applozic.mobicomkit.api.account.user.MobiComUserPreference;
 import com.applozic.mobicomkit.api.account.user.UserDetail;
+import com.applozic.mobicomkit.api.attachment.AttachmentManager;
+import com.applozic.mobicomkit.api.attachment.AttachmentTask;
 import com.applozic.mobicomkit.api.attachment.FileClientService;
 import com.applozic.mobicomkit.api.attachment.FileMeta;
 import com.applozic.mobicomkit.api.conversation.database.MessageDatabaseService;
@@ -21,7 +23,11 @@ import com.applozic.mobicomkit.broadcast.BroadcastService;
 import com.applozic.mobicomkit.channel.service.ChannelService;
 import com.applozic.mobicomkit.contact.AppContactService;
 import com.applozic.mobicomkit.contact.BaseContactService;
+import com.applozic.mobicomkit.exception.ApplozicException;
 import com.applozic.mobicomkit.feed.ChannelFeed;
+import com.applozic.mobicomkit.listners.MediaDownloadProgressHandler;
+import com.applozic.mobicomkit.listners.MediaUploadProgressHandler;
+import com.applozic.mobicomkit.listners.MessageListHandler;
 import com.applozic.mobicomkit.sync.SyncUserDetailsResponse;
 import com.applozic.mobicommons.commons.core.utils.Utils;
 import com.applozic.mobicommons.file.FileUtils;
@@ -65,14 +71,37 @@ public class MobiComConversationService {
     }
 
     public void sendMessage(Message message) {
-        sendMessage(message, MessageIntentService.class);
+        sendMessage(message, null, MessageIntentService.class);
+    }
+
+    public void sendMessage(Message message, MediaUploadProgressHandler handler, Class messageIntentClass) {
+        Intent intent = new Intent(context, messageIntentClass);
+        intent.putExtra(MobiComKitConstants.MESSAGE_JSON_INTENT, GsonUtils.getJsonFromObject(message, Message.class));
+        MessageIntentService.enqueueWork(context, intent, handler);
+
     }
 
     public void sendMessage(Message message, Class messageIntentClass) {
         Intent intent = new Intent(context, messageIntentClass);
         intent.putExtra(MobiComKitConstants.MESSAGE_JSON_INTENT, GsonUtils.getJsonFromObject(message, Message.class));
-        MessageIntentService.enqueueWork(context,intent);
+        MessageIntentService.enqueueWork(context, intent, null);
 
+    }
+
+    public void sendMessage(Message message, MediaUploadProgressHandler handler) {
+        if (message == null) {
+            return;
+        }
+
+        ApplozicException e = null;
+
+        if (!message.hasAttachment()) {
+            e = new ApplozicException("Message does not have any attachment");
+            handler.onUploadStarted(e);
+            handler.onProgressUpdate(0, e);
+            handler.onCancelled(e);
+        }
+        sendMessage(message, handler, MessageIntentService.class);
     }
 
     public List<Message> getLatestMessagesGroupByPeople() {
@@ -112,14 +141,14 @@ public class MobiComConversationService {
         if (isServerCallNotRequired && (!cachedMessageList.isEmpty() &&
                 (cachedMessageList.size() > 1 || wasServerCallDoneBefore(contact, channel, conversationId))
                 || (contact == null && channel == null && cachedMessageList.isEmpty() && wasServerCallDoneBefore(contact, channel, conversationId)))) {
-            Utils.printLog(context,TAG, "cachedMessageList size is : " + cachedMessageList.size());
+            Utils.printLog(context, TAG, "cachedMessageList size is : " + cachedMessageList.size());
             return cachedMessageList;
         }
 
         String data;
         try {
             data = messageClientService.getMessages(contact, channel, startTime, endTime, conversationId, isSkipRead);
-            Utils.printLog(context,TAG, "Received response from server for Messages: " + data);
+            Utils.printLog(context, TAG, "Received response from server for Messages: " + data);
         } catch (Exception ex) {
             ex.printStackTrace();
             return cachedMessageList;
@@ -170,7 +199,7 @@ public class MobiComConversationService {
 
             if (messages != null && messages.length > 0 && cachedMessageList.size() > 0 && cachedMessageList.get(0).isLocalMessage()) {
                 if (cachedMessageList.get(0).equals(messages[0])) {
-                    Utils.printLog(context,TAG, "Both messages are same.");
+                    Utils.printLog(context, TAG, "Both messages are same.");
                     deleteMessage(cachedMessageList.get(0));
                 }
             }
@@ -289,6 +318,9 @@ public class MobiComConversationService {
             }
             contact.setUserTypeId(userDetail.getUserTypeId());
             contact.setDeletedAtTime(userDetail.getDeletedAtTime());
+            contact.setRoleType(userDetail.getRoleType());
+            contact.setMetadata(userDetail.getMetadata());
+            contact.setLastMessageAtTime(userDetail.getLastMessageAtTime());
             if (newContact != null) {
                 if (newContact.isConnected() != contact.isConnected()) {
                     BroadcastService.sendUpdateLastSeenAtTimeBroadcast(context, BroadcastService.INTENT_ACTIONS.UPDATE_LAST_SEEN_AT_TIME.toString(), contact.getContactIds());
@@ -336,7 +368,7 @@ public class MobiComConversationService {
         if (contact == null && channel == null) {
             return;
         }
-        Utils.printLog(context,TAG, "updating server call to true");
+        Utils.printLog(context, TAG, "updating server call to true");
         sharedPreferences.edit().putBoolean(getServerSyncCallKey(contact, channel, conversationId), true).commit();
     }
 
@@ -455,6 +487,9 @@ public class MobiComConversationService {
                 contact.setUserTypeId(userDetail.getUserTypeId());
                 contact.setImageURL(userDetail.getImageLink());
                 contact.setDeletedAtTime(userDetail.getDeletedAtTime());
+                contact.setLastMessageAtTime(userDetail.getLastMessageAtTime());
+                contact.setMetadata(userDetail.getMetadata());
+                contact.setRoleType(userDetail.getRoleType());
                 baseContactService.upsert(contact);
             }
         }
@@ -481,11 +516,67 @@ public class MobiComConversationService {
             intent.putExtra(UserIntentService.CONTACT, contact);
             intent.putExtra(UserIntentService.CHANNEL, channel);
             intent.putExtra(UserIntentService.UNREAD_COUNT, unreadCount);
-            UserIntentService.enqueueWork(context,intent);
+            UserIntentService.enqueueWork(context, intent);
         } catch (Exception e) {
         }
     }
 
+    public void getMessageList(boolean isScroll, MessageListHandler handler) {
+        if (!isScroll) {
+            new MessageListTask(context, null, null, null, null, handler, true).execute();
+        } else {
+            new MessageListTask(context, null, null, MobiComUserPreference.getInstance(context).getStartTimeForPagination(), null, handler, true).execute();
+        }
+    }
+
+    public void getMessageList(Long startTime, MessageListHandler handler){
+        new MessageListTask(context, null, null, startTime, null, handler, true).execute();
+    }
+
+    public void getMessageListForContact(Contact contact, Long endTime, MessageListHandler handler) {
+        new MessageListTask(context, contact, null, null, endTime, handler, false).execute();
+    }
+
+    public void getMessageListForChannel(Channel channel, Long endTime, MessageListHandler handler) {
+        new MessageListTask(context, null, channel, null, endTime, handler, false).execute();
+    }
+
+    public void getMessageListForContact(String userId, Long endTime, MessageListHandler handler) {
+        new MessageListTask(context, baseContactService.getContactById(userId), null, null, endTime, handler, false).execute();
+    }
+
+    public void getMessageListForChannel(Integer channelKey, Long endTime, MessageListHandler handler) {
+        new MessageListTask(context, null, channelService.getChannel(channelKey), null, endTime, handler, false).execute();
+    }
+
+    public void downloadMessage(Message message, MediaDownloadProgressHandler handler) {
+        ApplozicException e;
+        if (message == null || handler == null) {
+            return;
+        }
+        if (!message.hasAttachment()) {
+            e = new ApplozicException("Message does not have Attachment");
+            handler.onProgressUpdate(0, e);
+            handler.onCompleted(null, e);
+        } else if (message.isAttachmentDownloaded()) {
+            e = new ApplozicException("Attachment for the message already downloaded");
+            handler.onProgressUpdate(0, e);
+            handler.onCompleted(null, e);
+        } else {
+            AttachmentTask mDownloadThread = null;
+            if (!AttachmentManager.isAttachmentInProgress(message.getKeyString())) {
+                // Starts downloading this View, using the current cache setting
+                mDownloadThread = AttachmentManager.startDownload(null, true, message, handler, context);
+                // After successfully downloading the image, this marks that it's available.
+            }
+            if (mDownloadThread == null) {
+                mDownloadThread = AttachmentManager.getBGThreadForAttachment(message.getKeyString());
+                if (mDownloadThread != null) {
+                    mDownloadThread.setAttachment(message, handler, context);
+                }
+            }
+        }
+    }
 
 //    public void addFileMetaDetails(String responseString, Message message) {
 //        JsonParser jsonParser = new JsonParser();

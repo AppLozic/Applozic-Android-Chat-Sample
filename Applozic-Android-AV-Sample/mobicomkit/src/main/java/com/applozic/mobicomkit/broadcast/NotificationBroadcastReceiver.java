@@ -50,7 +50,7 @@ public class NotificationBroadcastReceiver extends BroadcastReceiver {
 
                 newIntent = new Intent(context, MessageIntentService.class);
                 newIntent.putExtra(MobiComKitConstants.MESSAGE_JSON_INTENT, GsonUtils.getJsonFromObject(replyMessage, Message.class));
-                MessageIntentService.enqueueWork(context,newIntent);
+                MessageIntentService.enqueueWork(context, newIntent, null);
                 return;
             }
             //TODO: get activity name in intent...

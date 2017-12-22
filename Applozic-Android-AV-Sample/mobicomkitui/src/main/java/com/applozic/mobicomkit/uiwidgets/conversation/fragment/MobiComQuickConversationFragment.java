@@ -6,7 +6,6 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Process;
 import android.support.v4.app.Fragment;
-import android.support.v4.os.AsyncTaskCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
@@ -369,6 +368,7 @@ public class MobiComQuickConversationFragment extends Fragment implements Search
                                 TextView displayNameTextView = (TextView) view.findViewById(R.id.smReceivers);
                                 displayNameTextView.setText(contact.getDisplayName());
                                 conversationAdapter.contactImageLoader.loadImage(contact, contactImage);
+                                conversationAdapter.notifyDataSetChanged();
                             }
                         }
                     } catch (Exception ex) {
@@ -627,7 +627,7 @@ public class MobiComQuickConversationFragment extends Fragment implements Search
                 }
                 if (loadMore && !loading && (totalItemCount - visibleItemCount) <= (firstVisibleItem + visibleThreshold)) {
                     DownloadConversation downloadConversation = new DownloadConversation(view, false, firstVisibleItem, visibleItemCount, totalItemCount);
-                    AsyncTaskCompat.executeParallel(downloadConversation);
+                    downloadConversation.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
                     loading = true;
                 }
             }
@@ -642,7 +642,7 @@ public class MobiComQuickConversationFragment extends Fragment implements Search
     public void downloadConversations(boolean showInstruction, String searchString) {
         minCreatedAtTime = null;
         downloadConversation = new DownloadConversation(listView, true, 1, 0, 0, showInstruction, searchString);
-        AsyncTaskCompat.executeParallel(downloadConversation);
+        downloadConversation.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
         if (conversationAdapter != null) {
             conversationAdapter.searchString = searchString;
         }

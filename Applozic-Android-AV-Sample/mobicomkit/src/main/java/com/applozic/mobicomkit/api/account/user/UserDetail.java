@@ -2,6 +2,8 @@ package com.applozic.mobicomkit.api.account.user;
 
 import com.applozic.mobicommons.json.JsonMarker;
 
+import java.util.Map;
+
 /**
  * Created by sunil on 24/11/15.
  */
@@ -17,7 +19,34 @@ public class UserDetail extends JsonMarker {
     private String statusMessage;
     private Short userTypeId;
     private Long deletedAtTime;
+    private Long notificationAfterTime;
+    private Long lastMessageAtTime;
+    private Map<String,String> metadata;
+    private Short roleType;
 
+    public Long getLastMessageAtTime() {
+        return lastMessageAtTime;
+    }
+
+    public void setLastMessageAtTime(Long lastMessageAtTime) {
+        this.lastMessageAtTime = lastMessageAtTime;
+    }
+
+    public Map<String, String> getMetadata() {
+        return metadata;
+    }
+
+    public void setMetadata(Map<String, String> metadata) {
+        this.metadata = metadata;
+    }
+
+    public void setRoleType(Short roleType){
+        this.roleType = roleType;
+    }
+
+    public Short getRoleType(){
+        return roleType;
+    }
 
     public String getUserId() {
         return userId;
@@ -99,6 +128,13 @@ public class UserDetail extends JsonMarker {
         this.deletedAtTime = deletedAtTime;
     }
 
+    public void setNotificationAfterTime(Long notificationAfterTime) {
+        this.notificationAfterTime = notificationAfterTime;
+    }
+
+    public Long getNotificationAfterTime() {
+        return notificationAfterTime;
+    }
 
     @Override
     public String toString() {
@@ -113,6 +149,7 @@ public class UserDetail extends JsonMarker {
                 ", statusMessage='" + statusMessage + '\'' +
                 ", userTypeId=" + userTypeId +
                 ", deletedAtTime=" + deletedAtTime +
+                ", notificationAfterTime=" + notificationAfterTime +
                 '}';
     }
 }

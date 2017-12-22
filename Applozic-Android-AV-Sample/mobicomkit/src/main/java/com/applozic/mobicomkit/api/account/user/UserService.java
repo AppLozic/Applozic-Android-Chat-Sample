@@ -5,8 +5,11 @@ import android.text.TextUtils;
 
 import com.applozic.mobicomkit.api.MobiComKitClientService;
 import com.applozic.mobicomkit.api.MobiComKitConstants;
+import com.applozic.mobicomkit.api.notification.MuteUserResponse;
+import com.applozic.mobicomkit.broadcast.BroadcastService;
 import com.applozic.mobicomkit.contact.AppContactService;
 import com.applozic.mobicomkit.contact.BaseContactService;
+import com.applozic.mobicomkit.contact.database.ContactDatabase;
 import com.applozic.mobicomkit.feed.ApiResponse;
 import com.applozic.mobicomkit.feed.RegisteredUsersApiResponse;
 import com.applozic.mobicomkit.feed.SyncBlockUserApiResponse;
@@ -17,6 +20,7 @@ import com.applozic.mobicommons.json.GsonUtils;
 import com.applozic.mobicommons.people.contact.Contact;
 import com.google.gson.reflect.TypeToken;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -139,9 +143,27 @@ public class UserService {
         contact.setLastSeenAt(userDetail.getLastSeenAtTime());
         contact.setUserTypeId(userDetail.getUserTypeId());
         contact.setUnreadCount(0);
+        contact.setLastMessageAtTime(userDetail.getLastMessageAtTime());
+        contact.setMetadata(userDetail.getMetadata());
+        contact.setRoleType(userDetail.getRoleType());
         if (!TextUtils.isEmpty(userDetail.getImageLink())) {
             contact.setImageURL(userDetail.getImageLink());
         }
+        baseContactService.upsert(contact);
+    }
+
+    public synchronized void processMuteUserResponse(MuteUserResponse response) {
+        Contact contact = new Contact();
+        contact.setUserId(response.getUserId());
+        BroadcastService.sendMuteUserBroadcast(context, BroadcastService.INTENT_ACTIONS.MUTE_USER_CHAT.toString(), true, response.getUserId());
+        if (!TextUtils.isEmpty(response.getImageLink())) {
+            contact.setImageURL(response.getImageLink());
+        }
+        contact.setUnreadCount(response.getUnreadCount());
+        if (response.getNotificationAfterTime() != null && response.getNotificationAfterTime() != 0) {
+            contact.setNotificationAfterTime(response.getNotificationAfterTime());
+        }
+        contact.setConnected(response.isConnected());
         baseContactService.upsert(contact);
     }
 
@@ -182,6 +204,31 @@ public class UserService {
             return apiResponse;
         }
         return null;
+    }
+
+    public ApiResponse muteUserNotifications(String userId, Long notificationAfterTime) {
+        ApiResponse response = userClientService.muteUserNotifications(userId, notificationAfterTime);
+
+        if (response == null) {
+            return null;
+        }
+        if (response.isSuccess()) {
+            new ContactDatabase(context).updateNotificationAfterTime(userId, notificationAfterTime);
+        }
+
+        return response;
+    }
+
+    public List<MuteUserResponse> getMutedUserList() {
+        MuteUserResponse[] mutedUserList = userClientService.getMutedUserList();
+
+        if (mutedUserList == null) {
+            return null;
+        }
+        for (MuteUserResponse muteUserResponse : mutedUserList) {
+            processMuteUserResponse(muteUserResponse);
+        }
+        return Arrays.asList(mutedUserList);
     }
 
     public String updateDisplayNameORImageLink(String displayName, String profileImageLink, String localURL, String status) {
