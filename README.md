@@ -6,7 +6,7 @@ Android Video calling and Chat SDK samples using [Applozic SDK](https://www.appl
 Gradle Dependency:
 
 ```
-compile 'com.applozic.communication.uiwidget:audiovideo:1.6'
+compile 'com.applozic.communication.uiwidget:audiovideo:1.7'
 ```
 
 To integrate android video and audio calling chat library into your android app, signup at [Applozic](https://www.applozic.com/signup.html?utm_source=github&utm_medium=readme&utm_campaign=android) to get the application key.
