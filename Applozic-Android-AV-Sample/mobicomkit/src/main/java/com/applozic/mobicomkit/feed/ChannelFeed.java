@@ -8,6 +8,7 @@ import com.applozic.mobicommons.people.channel.Channel;
 import com.applozic.mobicommons.people.channel.Conversation;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -29,6 +30,7 @@ public class ChannelFeed extends JsonMarker {
     private Set<String> membersId;
     private Set<UserDetail> users;
     private Conversation conversationPxy;
+    private List<ChannelUsersFeed> groupUsers;
     private Long notificationAfterTime;
     private Long deletedAtTime;
     private Map<String, String> metadata = new HashMap<>();
@@ -68,7 +70,7 @@ public class ChannelFeed extends JsonMarker {
     }
 
     public String getAdminName() {
-        return TextUtils.isEmpty(adminName) ? adminId : adminName;
+        return TextUtils.isEmpty(adminName)?adminId:adminName;
     }
 
     public void setAdminName(String adminName) {
@@ -101,7 +103,7 @@ public class ChannelFeed extends JsonMarker {
 
     public Set<String> getMembersName() {
 
-        return (membersName == null) ? membersId : membersName;
+        return (membersName==null) ? membersId: membersName;
     }
 
     public void setMembersName(Set<String> membersName) {
@@ -170,6 +172,14 @@ public class ChannelFeed extends JsonMarker {
 
     public void setAdminId(String adminId) {
         this.adminId = adminId;
+    }
+
+    public List<ChannelUsersFeed> getGroupUsers() {
+        return groupUsers;
+    }
+
+    public void setGroupUsers(List<ChannelUsersFeed> groupUsers) {
+        this.groupUsers = groupUsers;
     }
 
     public Map<String, String> getMetadata() {

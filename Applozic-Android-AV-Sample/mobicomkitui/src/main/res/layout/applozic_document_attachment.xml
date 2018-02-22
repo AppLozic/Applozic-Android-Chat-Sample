@@ -3,16 +3,17 @@
     android:id="@+id/attachment_doc_relative_layout"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@android:color/transparent">
+    android:background="@android:color/transparent"
+    android:visibility="gone">
 
     <SeekBar
         android:id="@+id/applozic_audio_seekbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
+        android:layout_marginEnd="20dp"
         android:layout_marginLeft="100dp"
         android:layout_marginRight="20dp"
-        android:layout_marginEnd="20dp"
         android:layout_marginStart="60dp"
         android:layout_marginTop="25dp"
         android:thumbTint="@color/apploizc_lite_gray_color"

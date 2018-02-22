@@ -1,6 +1,7 @@
 package com.applozic.mobicomkit.api.conversation;
 
 import android.content.Context;
+import android.os.Handler;
 import android.text.TextUtils;
 
 import com.applozic.mobicomkit.ApplozicClient;
@@ -16,10 +17,8 @@ import com.applozic.mobicomkit.broadcast.BroadcastService;
 import com.applozic.mobicomkit.channel.service.ChannelService;
 import com.applozic.mobicomkit.contact.AppContactService;
 import com.applozic.mobicomkit.contact.BaseContactService;
-import com.applozic.mobicomkit.exception.ApplozicException;
 import com.applozic.mobicomkit.feed.ApiResponse;
 import com.applozic.mobicomkit.feed.MessageResponse;
-import com.applozic.mobicomkit.listners.MediaUploadProgressHandler;
 import com.applozic.mobicomkit.sync.SmsSyncRequest;
 import com.applozic.mobicomkit.sync.SyncMessageFeed;
 import com.applozic.mobicomkit.sync.SyncUserDetailsResponse;
@@ -38,7 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-;import static com.applozic.mobicomkit.api.account.user.MobiComUserPreference.userpref;
 
 /**
  * Created by devashish on 26/12/14.
@@ -290,18 +288,18 @@ public class MessageClientService extends MobiComKitClientService {
 
     }
 
-    public void sendMessageToServer(Message message, MediaUploadProgressHandler handler) throws Exception {
+    public void sendMessageToServer(Message message, Handler handler) throws Exception {
         sendMessageToServer(message, handler, null);
     }
 
-    public void sendMessageToServer(Message message, MediaUploadProgressHandler handler, Class intentClass) throws Exception {
+    public void sendMessageToServer(Message message, Handler handler, Class intentClass) throws Exception {
         processMessage(message, handler);
         if (message.getScheduledAt() != null && message.getScheduledAt() != 0 && intentClass != null) {
             new ScheduledMessageUtil(context, intentClass).createScheduleMessage(message, context);
         }
     }
 
-    public void processMessage(Message message, MediaUploadProgressHandler handler) throws Exception {
+    public void processMessage(Message message, Handler handler) throws Exception {
 
         boolean isBroadcast = (message.getMessageId() == null);
 
@@ -352,7 +350,10 @@ public class MessageClientService extends MobiComKitClientService {
                             return;
                         }
                         if (handler != null) {
-                            handler.onCompleted(new ApplozicException("Error while uploading"));
+                            android.os.Message msg = handler.obtainMessage();
+                            msg.what = MobiComConversationService.UPLOAD_COMPLETED;
+                            msg.getData().putString("error", "Error while uploading");
+                            msg.sendToTarget();
                         }
                         if (!message.isContactMessage()) {
                             messageDatabaseService.updateCanceledFlag(messageId, 1);
@@ -363,8 +364,11 @@ public class MessageClientService extends MobiComKitClientService {
                     if (ApplozicClient.getInstance(context).isCustomStorageServiceEnabled()) {
                         if (!TextUtils.isEmpty(fileMetaResponse)) {
                             message.setFileMetas((FileMeta) GsonUtils.getObjectFromJson(fileMetaResponse, FileMeta.class));
-                            if(handler != null){
-                                handler.onCompleted(null);
+                            if (handler != null) {
+                                android.os.Message msg = handler.obtainMessage();
+                                msg.what = MobiComConversationService.UPLOAD_COMPLETED;
+                                msg.getData().putString("error", null);
+                                msg.sendToTarget();
                             }
                         }
                     } else {
@@ -373,15 +377,21 @@ public class MessageClientService extends MobiComKitClientService {
                         if (jsonObject.has(FILE_META)) {
                             Gson gson = new Gson();
                             message.setFileMetas(gson.fromJson(jsonObject.get(FILE_META), FileMeta.class));
-                            if(handler != null){
-                                handler.onCompleted(null);
+                            if (handler != null) {
+                                android.os.Message msg = handler.obtainMessage();
+                                msg.what = MobiComConversationService.UPLOAD_COMPLETED;
+                                msg.getData().putString("error", null);
+                                msg.sendToTarget();
                             }
                         }
                     }
                 } catch (Exception ex) {
                     Utils.printLog(context, TAG, "Error uploading file to server: " + filePath);
                     if (handler != null) {
-                        handler.onCompleted(new ApplozicException("Error uploading file to server: " + filePath));
+                        android.os.Message msg = handler.obtainMessage();
+                        msg.what = MobiComConversationService.UPLOAD_COMPLETED;
+                        msg.getData().putString("error", "Error uploading file to server: " + filePath);
+                        msg.sendToTarget();
                     }
                   /*  recentMessageSentToServer.remove(message);*/
                     if (!message.isContactMessage() && !skipMessage) {
@@ -441,7 +451,10 @@ public class MessageClientService extends MobiComKitClientService {
                 if (message.hasAttachment() && TextUtils.isEmpty(response) && !message.isContactMessage() && !skipMessage) {
                     messageDatabaseService.updateCanceledFlag(messageId, 1);
                     if (handler != null) {
-                        handler.onCompleted(new ApplozicException("Error uploading file to server"));
+                        android.os.Message msg = handler.obtainMessage();
+                        msg.what = MobiComConversationService.UPLOAD_COMPLETED;
+                        msg.getData().putString("error", "Error uploading file to server");
+                        msg.sendToTarget();
                     }
                     BroadcastService.sendMessageUpdateBroadcast(context, BroadcastService.INTENT_ACTIONS.UPLOAD_ATTACHMENT_FAILED.toString(), message);
                 }
@@ -461,8 +474,12 @@ public class MessageClientService extends MobiComKitClientService {
                 messageDatabaseService.updateMessage(messageId, message.getSentMessageTimeAtServer(), keyString, message.isSentToServer());
             }
             if (message.isSentToServer()) {
+
                 if (handler != null) {
-                    handler.onSent(message);
+                    android.os.Message msg = handler.obtainMessage();
+                    msg.what = MobiComConversationService.MESSAGE_SENT;
+                    msg.getData().putString("message", message.getKeyString());
+                    msg.sendToTarget();
                 }
             }
 
@@ -477,7 +494,11 @@ public class MessageClientService extends MobiComKitClientService {
 
         } catch (Exception e) {
             if (handler != null) {
-                handler.onCompleted(new ApplozicException("Error uploading file"));
+                android.os.Message msg = handler.obtainMessage();
+                msg.what = MobiComConversationService.UPLOAD_COMPLETED;
+                msg.getData().putString("error", "Error uploading file");
+                msg.sendToTarget();
+                //handler.onCompleted(new ApplozicException("Error uploading file"));
             }
         }
 

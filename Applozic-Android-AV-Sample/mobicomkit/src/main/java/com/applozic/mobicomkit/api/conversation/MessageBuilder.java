@@ -72,7 +72,7 @@ public class MessageBuilder {
         if (handler == null || !message.hasAttachment()) {
             new MobiComConversationService(context).sendMessage(message);
         } else if (message.hasAttachment()) {
-            new MobiComConversationService(context).sendMessage(message, handler);
+            new MobiComConversationService(context).sendMessage(message, handler, null);
         }
     }
 }

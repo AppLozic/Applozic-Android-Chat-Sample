@@ -14,7 +14,7 @@
         android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
         app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
         app:subtitleTextAppearance="@style/ToolbarSubtitle"
-        app:titleTextAppearance="@style/ToolbarTitle"></android.support.v7.widget.Toolbar>
+        app:titleTextAppearance="@style/ToolbarTitle"/>
 
     <RelativeLayout
         android:id="@+id/layout_child_activity"

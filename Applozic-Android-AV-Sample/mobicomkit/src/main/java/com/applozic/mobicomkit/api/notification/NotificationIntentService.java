@@ -1,6 +1,5 @@
-package com.applozic.mobicomkit.uiwidgets.notification;
+package com.applozic.mobicomkit.api.notification;
 
-import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
 import android.support.annotation.NonNull;
@@ -12,13 +11,11 @@ import com.applozic.mobicomkit.api.account.user.MobiComUserPreference;
 import com.applozic.mobicomkit.api.conversation.Message;
 import com.applozic.mobicomkit.api.conversation.database.MessageDatabaseService;
 import com.applozic.mobicomkit.api.conversation.service.ConversationService;
-import com.applozic.mobicomkit.api.notification.NotificationService;
 import com.applozic.mobicomkit.channel.service.ChannelService;
 import com.applozic.mobicomkit.contact.AppContactService;
 import com.applozic.mobicommons.commons.core.utils.Utils;
 import com.applozic.mobicommons.people.channel.Channel;
 import com.applozic.mobicommons.people.contact.Contact;
-import com.applozic.mobicomkit.uiwidgets.R;
 
 
 public class NotificationIntentService extends JobIntentService {
@@ -26,6 +23,7 @@ public class NotificationIntentService extends JobIntentService {
 
     AppContactService appContactService;
     MessageDatabaseService messageDatabaseService;
+    private static int[] resourceArray = new int[4];
     /**
      * Unique job ID for this service.
      */
@@ -34,7 +32,11 @@ public class NotificationIntentService extends JobIntentService {
     /**
      * Convenience method for enqueuing work in to this service.
      */
-    static public void enqueueWork(Context context, Intent work) {
+    static public void enqueueWork(Context context, Intent work, int iconResourceId, int wearableActionLabel, int wearableActionTitle, int wearableSendIcon) {
+        resourceArray[0] = iconResourceId;
+        resourceArray[1] = wearableActionLabel;
+        resourceArray[2] = wearableActionTitle;
+        resourceArray[3] = wearableSendIcon;
         enqueueWork(context, NotificationIntentService.class, JOB_ID, work);
     }
 
@@ -56,7 +58,7 @@ public class NotificationIntentService extends JobIntentService {
                 if (message != null) {
                     int notificationId = Utils.getLauncherIcon(getApplicationContext());
                     final NotificationService notificationService =
-                            new NotificationService(notificationId == 0 ? R.drawable.mobicom_ic_launcher : notificationId, NotificationIntentService.this, R.string.wearable_action_label, R.string.wearable_action_title, R.drawable.mobicom_ic_action_send);
+                            new NotificationService(notificationId == 0 ? resourceArray[0] : notificationId, NotificationIntentService.this, resourceArray[1], resourceArray[2], resourceArray[3]);
 
                     if (MobiComUserPreference.getInstance(NotificationIntentService.this).isLoggedIn()) {
                         Channel channel = ChannelService.getInstance(NotificationIntentService.this).getChannelInfo(message.getGroupId());

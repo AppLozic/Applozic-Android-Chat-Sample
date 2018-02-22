@@ -3,17 +3,16 @@ package com.applozic.mobicomkit.api.conversation;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Bundle;
+import android.os.Handler;
 import android.os.Process;
 import android.support.v4.content.LocalBroadcastManager;
 import android.text.TextUtils;
 
-import com.applozic.mobicomkit.ApplozicClient;
 import com.applozic.mobicomkit.api.MobiComKitClientService;
 import com.applozic.mobicomkit.api.MobiComKitConstants;
 import com.applozic.mobicomkit.api.account.user.MobiComUserPreference;
 import com.applozic.mobicomkit.api.account.user.UserDetail;
-import com.applozic.mobicomkit.api.attachment.AttachmentManager;
-import com.applozic.mobicomkit.api.attachment.AttachmentTask;
 import com.applozic.mobicomkit.api.attachment.FileClientService;
 import com.applozic.mobicomkit.api.attachment.FileMeta;
 import com.applozic.mobicomkit.api.conversation.database.MessageDatabaseService;
@@ -25,9 +24,7 @@ import com.applozic.mobicomkit.contact.AppContactService;
 import com.applozic.mobicomkit.contact.BaseContactService;
 import com.applozic.mobicomkit.exception.ApplozicException;
 import com.applozic.mobicomkit.feed.ChannelFeed;
-import com.applozic.mobicomkit.listners.MediaDownloadProgressHandler;
 import com.applozic.mobicomkit.listners.MediaUploadProgressHandler;
-import com.applozic.mobicomkit.listners.MessageListHandler;
 import com.applozic.mobicomkit.sync.SyncUserDetailsResponse;
 import com.applozic.mobicommons.commons.core.utils.Utils;
 import com.applozic.mobicommons.file.FileUtils;
@@ -59,6 +56,12 @@ public class MobiComConversationService {
     private BaseContactService baseContactService;
     private ConversationService conversationService;
     private ChannelService channelService;
+    public static final int UPLOAD_STARTED = 1;
+    public static final int UPLOAD_PROGRESS = 2;
+    public static final int UPLOAD_CANCELLED = 3;
+    public static final int UPLOAD_COMPLETED = 4;
+    public static final int MESSAGE_SENT = 5;
+
 
     public MobiComConversationService(Context context) {
         this.context = context;
@@ -74,18 +77,25 @@ public class MobiComConversationService {
         sendMessage(message, null, MessageIntentService.class);
     }
 
-    public void sendMessage(Message message, MediaUploadProgressHandler handler, Class messageIntentClass) {
+    public void sendMessage(Message message, final MediaUploadProgressHandler progressHandler, Class messageIntentClass) {
         Intent intent = new Intent(context, messageIntentClass);
         intent.putExtra(MobiComKitConstants.MESSAGE_JSON_INTENT, GsonUtils.getJsonFromObject(message, Message.class));
-        MessageIntentService.enqueueWork(context, intent, handler);
 
+        Handler handler = new Handler(new Handler.Callback() {
+            @Override
+            public boolean handleMessage(android.os.Message message) {
+                handleState(message, progressHandler);
+                return true;
+            }
+        });
+
+        MessageIntentService.enqueueWork(context, intent, handler);
     }
 
     public void sendMessage(Message message, Class messageIntentClass) {
         Intent intent = new Intent(context, messageIntentClass);
         intent.putExtra(MobiComKitConstants.MESSAGE_JSON_INTENT, GsonUtils.getJsonFromObject(message, Message.class));
         MessageIntentService.enqueueWork(context, intent, null);
-
     }
 
     public void sendMessage(Message message, MediaUploadProgressHandler handler) {
@@ -97,9 +107,11 @@ public class MobiComConversationService {
 
         if (!message.hasAttachment()) {
             e = new ApplozicException("Message does not have any attachment");
-            handler.onUploadStarted(e);
-            handler.onProgressUpdate(0, e);
-            handler.onCancelled(e);
+            if (handler != null) {
+                handler.onUploadStarted(e);
+                handler.onProgressUpdate(0, e);
+                handler.onCancelled(e);
+            }
         }
         sendMessage(message, handler, MessageIntentService.class);
     }
@@ -521,59 +533,45 @@ public class MobiComConversationService {
         }
     }
 
-    public void getMessageList(boolean isScroll, MessageListHandler handler) {
-        if (!isScroll) {
-            new MessageListTask(context, null, null, null, null, handler, true).execute();
-        } else {
-            new MessageListTask(context, null, null, MobiComUserPreference.getInstance(context).getStartTimeForPagination(), null, handler, true).execute();
-        }
-    }
-
-    public void getMessageList(Long startTime, MessageListHandler handler){
-        new MessageListTask(context, null, null, startTime, null, handler, true).execute();
-    }
-
-    public void getMessageListForContact(Contact contact, Long endTime, MessageListHandler handler) {
-        new MessageListTask(context, contact, null, null, endTime, handler, false).execute();
-    }
-
-    public void getMessageListForChannel(Channel channel, Long endTime, MessageListHandler handler) {
-        new MessageListTask(context, null, channel, null, endTime, handler, false).execute();
-    }
-
-    public void getMessageListForContact(String userId, Long endTime, MessageListHandler handler) {
-        new MessageListTask(context, baseContactService.getContactById(userId), null, null, endTime, handler, false).execute();
-    }
-
-    public void getMessageListForChannel(Integer channelKey, Long endTime, MessageListHandler handler) {
-        new MessageListTask(context, null, channelService.getChannel(channelKey), null, endTime, handler, false).execute();
-    }
-
-    public void downloadMessage(Message message, MediaDownloadProgressHandler handler) {
-        ApplozicException e;
-        if (message == null || handler == null) {
-            return;
-        }
-        if (!message.hasAttachment()) {
-            e = new ApplozicException("Message does not have Attachment");
-            handler.onProgressUpdate(0, e);
-            handler.onCompleted(null, e);
-        } else if (message.isAttachmentDownloaded()) {
-            e = new ApplozicException("Attachment for the message already downloaded");
-            handler.onProgressUpdate(0, e);
-            handler.onCompleted(null, e);
-        } else {
-            AttachmentTask mDownloadThread = null;
-            if (!AttachmentManager.isAttachmentInProgress(message.getKeyString())) {
-                // Starts downloading this View, using the current cache setting
-                mDownloadThread = AttachmentManager.startDownload(null, true, message, handler, context);
-                // After successfully downloading the image, this marks that it's available.
+    private void handleState(android.os.Message message, MediaUploadProgressHandler progressHandler) {
+        if (message != null) {
+            Bundle b = message.getData();
+            String e = null;
+            if (b != null) {
+                e = b.getString("error");
             }
-            if (mDownloadThread == null) {
-                mDownloadThread = AttachmentManager.getBGThreadForAttachment(message.getKeyString());
-                if (mDownloadThread != null) {
-                    mDownloadThread.setAttachment(message, handler, context);
-                }
+            switch (message.what) {
+                case UPLOAD_STARTED:
+                    if (progressHandler != null) {
+                        progressHandler.onUploadStarted(e != null ? new ApplozicException(e) : null);
+                    }
+                    break;
+
+                case UPLOAD_PROGRESS:
+                    if (progressHandler != null) {
+                        progressHandler.onProgressUpdate(message.arg1, e != null ? new ApplozicException(e) : null);
+                    }
+                    break;
+
+                case UPLOAD_COMPLETED:
+                    if (progressHandler != null) {
+                        progressHandler.onCompleted(e != null ? new ApplozicException(e) : null);
+                    }
+                    break;
+
+                case UPLOAD_CANCELLED:
+                    if (progressHandler != null) {
+                        progressHandler.onCancelled(e != null ? new ApplozicException(e) : null);
+                    }
+                    break;
+
+                case MESSAGE_SENT:
+                    if (b != null) {
+                        if (progressHandler != null) {
+                            progressHandler.onSent(messageDatabaseService.getMessage(b.getString("message")));
+                        }
+                    }
+                    break;
             }
         }
     }

@@ -3,6 +3,7 @@ package com.applozic.mobicomkit.api.conversation;
 import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v4.app.JobIntentService;
 
@@ -21,7 +22,7 @@ public class MessageIntentService extends JobIntentService {
 
     private static final String TAG = "MessageIntentService";
     private MessageClientService messageClientService;
-    private static Map<Long, MediaUploadProgressHandler> uploadQueueMap = new HashMap<>();
+    private static Map<Long, Handler> uploadQueueMap = new HashMap<>();
 
     /**
      * Unique job ID for this service.
@@ -31,7 +32,7 @@ public class MessageIntentService extends JobIntentService {
     /**
      * Convenience method for enqueuing work in to this service.
      */
-    static public void enqueueWork(Context context, Intent work, MediaUploadProgressHandler handler) {
+    static public void enqueueWork(Context context, Intent work, Handler handler) {
         enqueueWork(context, MessageIntentService.class, JOB_ID, work);
         if (work != null) {
             final Message message = (Message) GsonUtils.getObjectFromJson(work.getStringExtra(MobiComKitConstants.MESSAGE_JSON_INTENT), Message.class);
@@ -52,9 +53,9 @@ public class MessageIntentService extends JobIntentService {
 
     private class MessageSender implements Runnable {
         private Message message;
-        private MediaUploadProgressHandler handler;
+        private Handler handler;
 
-        public MessageSender(Message message, MediaUploadProgressHandler handler) {
+        public MessageSender(Message message, Handler handler) {
             this.message = message;
             this.handler = handler;
         }

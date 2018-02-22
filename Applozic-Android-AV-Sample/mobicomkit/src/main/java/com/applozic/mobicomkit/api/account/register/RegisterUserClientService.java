@@ -66,7 +66,7 @@ public class RegisterUserClientService extends MobiComKitClientService {
 //    final RegistrationResponse registrationResponse = createAccount(user);
 //    Intent intent = new Intent(context, ApplozicMqttIntentService.class);
 //    intent.putExtra(ApplozicMqttIntentService.CONNECTED_PUBLISH,true);
-//    context.startService(intent);
+//    ApplozicMqttIntentService.enqueueWork(context, intent);
 //    return registrationResponse;
 
 
@@ -170,7 +170,7 @@ public class RegisterUserClientService extends MobiComKitClientService {
 
         Intent mutedUserListService = new Intent(context, ConversationIntentService.class);
         mutedUserListService.putExtra(ConversationIntentService.MUTED_USER_LIST_SYNC, true);
-        context.startService(mutedUserListService);
+        ConversationIntentService.enqueueWork(context, mutedUserListService);
 
         Intent intent = new Intent(context, ApplozicMqttIntentService.class);
         intent.putExtra(ApplozicMqttIntentService.CONNECTED_PUBLISH, true);

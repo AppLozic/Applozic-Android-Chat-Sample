@@ -51,6 +51,7 @@ import com.applozic.mobicomkit.channel.service.ChannelService;
 import com.applozic.mobicomkit.contact.AppContactService;
 import com.applozic.mobicomkit.contact.BaseContactService;
 import com.applozic.mobicomkit.feed.ApiResponse;
+import com.applozic.mobicomkit.feed.ChannelUsersFeed;
 import com.applozic.mobicomkit.feed.ErrorResponseFeed;
 import com.applozic.mobicomkit.feed.GroupInfoUpdate;
 import com.applozic.mobicomkit.feed.RegisteredUsersApiResponse;
@@ -72,6 +73,7 @@ import com.applozic.mobicommons.people.contact.Contact;
 
 import java.io.File;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.List;
 
 import de.hdodenhof.circleimageview.CircleImageView;
@@ -255,7 +257,7 @@ public class ChannelInfoActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mobiComKitBroadcastReceiver);
-        if(refreshBroadcast != null){
+        if (refreshBroadcast != null) {
             LocalBroadcastManager.getInstance(this).unregisterReceiver(refreshBroadcast);
         }
         BroadcastService.currentInfoId = null;
@@ -267,7 +269,7 @@ public class ChannelInfoActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         LocalBroadcastManager.getInstance(this).registerReceiver(mobiComKitBroadcastReceiver, BroadcastService.getIntentFilter());
-        LocalBroadcastManager.getInstance(this).registerReceiver(refreshBroadcast, new IntentFilter(BroadcastService.INTENT_ACTIONS.UPDATE_USER_DETAIL.toString()));
+        LocalBroadcastManager.getInstance(this).registerReceiver(refreshBroadcast, getIntentFilter());
         if (channel != null) {
             BroadcastService.currentInfoId = String.valueOf(channel.getKey());
             Channel newChannel = ChannelService.getInstance(this).getChannelByChannelKey(channel.getKey());
@@ -328,6 +330,22 @@ public class ChannelInfoActivity extends AppCompatActivity {
             case 1:
                 removeChannelUser(channel, channelUserMapper);
                 break;
+            case 2:
+                if (Utils.isInternetAvailable(getApplicationContext())) {
+                    GroupInfoUpdate groupInfoUpdate = new GroupInfoUpdate(channelUserMapper.getKey());
+                    List<ChannelUsersFeed> channelUsersFeedList = new ArrayList<>();
+                    ChannelUsersFeed channelUsersFeed = new ChannelUsersFeed();
+                    channelUsersFeed.setUserId(channelUserMapper.getUserKey());
+                    channelUsersFeed.setRole(1);
+                    channelUsersFeedList.add(channelUsersFeed);
+                    groupInfoUpdate.setUsers(channelUsersFeedList);
+                    new ChannelUserRoleAsyncTask(channelUserMapper, groupInfoUpdate, this).execute();
+                } else {
+                    Toast toast = Toast.makeText(this, getString(R.string.you_dont_have_any_network_access_info), Toast.LENGTH_SHORT);
+                    toast.setGravity(Gravity.CENTER, 0, 0);
+                    toast.show();
+                }
+                break;
             default:
                 return super.onContextItemSelected(item);
         }
@@ -339,7 +357,12 @@ public class ChannelInfoActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.channel_menu_option, menu);
-        if (alCustomizationSettings.isHideGroupAddMembersButton() || !ChannelUtils.isAdminUserId(userPreference.getUserId(), channel)) {
+        if (channel == null) {
+            return true;
+        }
+
+        ChannelUserMapper loggedInUserMapper = ChannelService.getInstance(this).getChannelUserMapperByUserId(channel.getKey(), MobiComUserPreference.getInstance(ChannelInfoActivity.this).getUserId());
+        if (alCustomizationSettings.isHideGroupAddMembersButton() || loggedInUserMapper != null && ChannelUserMapper.UserRole.MEMBER.getValue().equals(loggedInUserMapper.getRole()) || (!ChannelUtils.isAdminUserId(userPreference.getUserId(), channel) && loggedInUserMapper != null && Integer.valueOf(0).equals(loggedInUserMapper.getRole()))) {
             menu.removeItem(R.id.add_member_to_channel);
         }
         if (alCustomizationSettings.isHideGroupNameUpdateButton() || channel.isBroadcastMessage()) {
@@ -360,13 +383,24 @@ public class ChannelInfoActivity extends AppCompatActivity {
             return;
         }
         boolean isHideRemove = alCustomizationSettings.isHideGroupRemoveMemberOption();
+        ChannelUserMapper loggedInUserMapper = ChannelService.getInstance(this).getChannelUserMapperByUserId(channelUserMapper.getKey(), MobiComUserPreference.getInstance(ChannelInfoActivity.this).getUserId());
         String[] menuItems = getResources().getStringArray(R.array.channel_users_menu_option);
         Contact contact = baseContactService.getContactById(channelUserMapper.getUserKey());
         for (int i = 0; i < menuItems.length; i++) {
-            if (menuItems[i].equals(getString(R.string.remove_member)) && (isHideRemove || !isUserPresent || !ChannelUtils.isAdminUserId(userPreference.getUserId(), channel))) {
+            if (menuItems[i].equals(getString(R.string.make_admin_text_info)) && loggedInUserMapper != null && ChannelUserMapper.UserRole.MEMBER.getValue().equals(loggedInUserMapper.getRole())) {
                 continue;
             }
-            menu.add(Menu.NONE, i, i, menuItems[i] + " " + contact.getDisplayName());
+            if (menuItems[i].equals(getString(R.string.remove_member)) && (isHideRemove || !isUserPresent || !ChannelUtils.isAdminUserId(userPreference.getUserId(), channel) && loggedInUserMapper != null && Integer.valueOf(0).equals(loggedInUserMapper.getRole()) || loggedInUserMapper != null && ChannelUserMapper.UserRole.MEMBER.getValue().equals(loggedInUserMapper.getRole()))) {
+                continue;
+            }
+            if (menuItems[i].equals(getString(R.string.make_admin_text_info)) && (!isUserPresent || ChannelUserMapper.UserRole.ADMIN.getValue().equals(channelUserMapper.getRole()))) {
+                continue;
+            }
+            if (menuItems[i].equals(getString(R.string.make_admin_text_info))) {
+                menu.add(Menu.NONE, i, i, menuItems[i]);
+            } else {
+                menu.add(Menu.NONE, i, i, menuItems[i] + " " + contact.getDisplayName());
+            }
         }
     }
 
@@ -381,7 +415,7 @@ public class ChannelInfoActivity extends AppCompatActivity {
         if (id == R.id.add_member_to_channel) {
             if (isUserPresent) {
                 Utils.toggleSoftKeyBoard(ChannelInfoActivity.this, true);
-                if (alCustomizationSettings.getTotalRegisteredUserToFetch() > 0 && (alCustomizationSettings.isRegisteredUserContactListCall() || ApplozicSetting.getInstance(this).isRegisteredUsersContactCall())&& !userPreference.getWasContactListServerCallAlreadyDone()) {
+                if (alCustomizationSettings.getTotalRegisteredUserToFetch() > 0 && (alCustomizationSettings.isRegisteredUserContactListCall() || ApplozicSetting.getInstance(this).isRegisteredUsersContactCall()) && !userPreference.getWasContactListServerCallAlreadyDone()) {
                     processLoadRegisteredUsers();
                 } else {
                     Intent addMemberIntent = new Intent(ChannelInfoActivity.this, ContactSelectionActivity.class);
@@ -619,7 +653,7 @@ public class ChannelInfoActivity extends AppCompatActivity {
             } else {
                 holder.displayName.setText(contact.getDisplayName());
             }
-            if (ChannelUtils.isAdminUserId(contact.getUserId(), channel)) {
+            if (ChannelUtils.isAdminUserId(channelUserMapper.getUserKey(), channel) && Integer.valueOf(0).equals(channelUserMapper.getRole()) || ChannelUserMapper.UserRole.ADMIN.getValue().equals(channelUserMapper.getRole())) {
                 holder.adminTextView.setVisibility(View.VISIBLE);
             } else {
                 holder.adminTextView.setVisibility(View.GONE);
@@ -943,6 +977,75 @@ public class ChannelInfoActivity extends AppCompatActivity {
         public void onReceive(Context context, Intent intent) {
             updateChannelList();
         }
+    }
+
+    static IntentFilter getIntentFilter(){
+        IntentFilter intentFilter =  new IntentFilter();
+        intentFilter.addAction(BroadcastService.INTENT_ACTIONS.UPDATE_GROUP_INFO.toString());
+        intentFilter.addAction(BroadcastService.INTENT_ACTIONS.UPDATE_USER_DETAIL.toString());
+        return intentFilter;
+    }
+
+
+    public class ChannelUserRoleAsyncTask extends AsyncTask<Void, Integer, Long> {
+        private ChannelService channelService;
+        private ProgressDialog progressDialog;
+        private Context context;
+        ChannelUserMapper channelUserMapper;
+        String response;
+        GroupInfoUpdate groupInfoUpdate;
+
+        public ChannelUserRoleAsyncTask(ChannelUserMapper channelUserMapper, GroupInfoUpdate groupInfoUpdate, Context context) {
+            this.channelUserMapper = channelUserMapper;
+            this.context = context;
+            this.groupInfoUpdate = groupInfoUpdate;
+            this.channelService = ChannelService.getInstance(context);
+
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            progressDialog = ProgressDialog.show(context, "",
+                    context.getString(R.string.please_wait_info), true);
+        }
+
+        @Override
+        protected Long doInBackground(Void... params) {
+            if (groupInfoUpdate != null) {
+                response = channelService.updateChannel(groupInfoUpdate);
+                if (!TextUtils.isEmpty(response) && MobiComKitConstants.SUCCESS.equals(response)) {
+                    for (ChannelUsersFeed channelUsersFeed : groupInfoUpdate.getUsers()) {
+                        channelUserMapper.setRole(channelUsersFeed.getRole());
+                        channelService.updateRoleInChannelUserMapper(groupInfoUpdate.getGroupId(), channelUserMapper.getUserKey(), channelUsersFeed.getRole());
+                    }
+                }
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Long aLong) {
+            super.onPostExecute(aLong);
+            if (progressDialog != null && progressDialog.isShowing()) {
+                progressDialog.dismiss();
+            }
+            if (!TextUtils.isEmpty(response) && MobiComKitConstants.SUCCESS.equals(response)) {
+                if (channelUserMapper != null && channelUserMapperList != null) {
+                    try {
+                        int index = channelUserMapperList.indexOf(channelUserMapper);
+                        channelUserMapperList.remove(channelUserMapper);
+                        channelUserMapperList.add(index, channelUserMapper);
+                        contactsAdapter.notifyDataSetChanged();
+                    } catch (Exception e) {
+
+                    }
+
+                }
+            }
+
+        }
+
     }
 
 }

@@ -58,6 +58,12 @@ public class Message extends JsonMarker {
     private short status = Status.READ.getValue();
     private boolean hidden;
     private int replyMessage;
+    public static final String IMAGE = "image";
+    public static final String VIDEO = "video";
+    public static final String AUDIO = "audio";
+    public static final String CONTACT = "contact";
+    public static final String LOCATION = "location";
+    public static final String OTHER = "other";
 
     public Message() {
 
@@ -135,7 +141,7 @@ public class Message extends JsonMarker {
     }
 
     public boolean isAttachmentUploadInProgress() {
-        return filePaths != null && !filePaths.isEmpty() && FileUtils.isFileExist(filePaths.get(0))&& !sentToServer;
+        return filePaths != null && !filePaths.isEmpty() && FileUtils.isFileExist(filePaths.get(0)) && !sentToServer;
     }
 
     public boolean isAttachmentDownloaded() {
@@ -481,6 +487,50 @@ public class Message extends JsonMarker {
         return false;
     }
 
+    public String getAttachmentType() {
+        String type = "no_attachment";
+
+        if (getContentType() == Message.ContentType.LOCATION.getValue()) {
+            type = "location";
+        } else if (getContentType() == Message.ContentType.AUDIO_MSG.getValue()) {
+            type = "audio";
+        } else if (getContentType() == Message.ContentType.VIDEO_MSG.getValue()) {
+            type = "video";
+        } else if (getContentType() == Message.ContentType.ATTACHMENT.getValue()) {
+            if (getFilePaths() != null) {
+                String filePath = getFilePaths().get(getFilePaths().size() - 1);
+                String mimeType = FileUtils.getMimeType(filePath);
+
+                if (mimeType != null) {
+                    if (mimeType.startsWith("image")) {
+                        type = "image";
+                    } else if (mimeType.startsWith("audio")) {
+                        type = "audio";
+                    } else if (mimeType.startsWith("video")) {
+                        type = "video";
+                    } else {
+                        type = "others";
+                    }
+                }
+            } else if (getFileMetas() != null) {
+                if (getFileMetas().getContentType().contains("image")) {
+                    type = "image";
+                } else if (getFileMetas().getContentType().contains("audio")) {
+                    type = "audio";
+                } else if (getFileMetas().getContentType().contains("video")) {
+                    type = "video";
+                } else {
+                    type = "others";
+                }
+            }
+        } else if (getContentType() == Message.ContentType.CONTACT_MSG.getValue()) {
+            type = "contact";
+        } else if (hasAttachment()) {
+            type = "others";
+        }
+        return type;
+    }
+
     @Override
     public int hashCode() {
         int result = key != null ? key.hashCode() : 0;
@@ -760,7 +810,7 @@ public class Message extends JsonMarker {
         }
     }
 
-    public enum ReplyMessage{
+    public enum ReplyMessage {
         NON_HIDDEN(0),
         REPLY_MESSAGE(1),
         HIDE_MESSAGE(2);

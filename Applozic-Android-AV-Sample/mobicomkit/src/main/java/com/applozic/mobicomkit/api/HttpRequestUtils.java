@@ -124,6 +124,7 @@ public class HttpRequestUtils {
         }
         connection.setDoInput(true);
         connection.setDoOutput(true);
+        addGlobalHeaders(connection);
         connection.connect();
 
         byte[] dataBytes = data.getBytes("UTF-8");

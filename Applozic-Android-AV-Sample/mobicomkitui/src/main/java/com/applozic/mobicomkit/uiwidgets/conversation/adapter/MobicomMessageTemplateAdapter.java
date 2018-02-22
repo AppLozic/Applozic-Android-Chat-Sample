@@ -13,7 +13,9 @@ import android.widget.TextView;
 import com.applozic.mobicomkit.uiwidgets.R;
 import com.applozic.mobicomkit.uiwidgets.conversation.MobicomMessageTemplate;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by reytum on 1/8/17.
@@ -24,10 +26,12 @@ public class MobicomMessageTemplateAdapter extends RecyclerView.Adapter<MobicomM
     private MobicomMessageTemplate messageTemplate;
     private MessageTemplateDataListener listener;
     private List<String> messageList;
+    private Map<String, String> messageMap;
 
     public MobicomMessageTemplateAdapter(MobicomMessageTemplate messageTemplate) {
         this.messageTemplate = messageTemplate;
-        this.messageList = messageTemplate.getMessages();
+        this.messageList = new ArrayList<>(messageTemplate.getMessages().keySet());
+        this.messageMap = messageTemplate.getMessages();
     }
 
     @Override
@@ -46,7 +50,7 @@ public class MobicomMessageTemplateAdapter extends RecyclerView.Adapter<MobicomM
         holder.messageText.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                listener.onItemSelected(messageList.get(position));
+                listener.onItemSelected(messageMap.get(messageList.get(position)));
             }
         });
     }
@@ -56,8 +60,9 @@ public class MobicomMessageTemplateAdapter extends RecyclerView.Adapter<MobicomM
         return messageList.size();
     }
 
-    public void setMessageList(List<String> messageList) {
-        this.messageList = messageList;
+    public void setMessageList(Map<String, String> messageList) {
+        this.messageMap = messageList;
+        this.messageList = new ArrayList<>(messageList.keySet());
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {

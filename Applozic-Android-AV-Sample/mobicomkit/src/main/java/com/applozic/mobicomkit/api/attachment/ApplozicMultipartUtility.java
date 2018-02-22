@@ -1,10 +1,10 @@
 package com.applozic.mobicomkit.api.attachment;
 
 import android.content.Context;
+import android.os.Handler;
 
 import com.applozic.mobicomkit.api.HttpRequestUtils;
-import com.applozic.mobicomkit.exception.ApplozicException;
-import com.applozic.mobicomkit.listners.MediaUploadProgressHandler;
+import com.applozic.mobicomkit.api.conversation.MobiComConversationService;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -46,7 +46,7 @@ public class ApplozicMultipartUtility {
     }
 
 
-    public void addFilePart(String fieldName, File uploadFile, MediaUploadProgressHandler handler)
+    public void addFilePart(String fieldName, File uploadFile, Handler handler)
             throws IOException, InterruptedException {
         String fileName = uploadFile.getName();
         writer.append("--" + boundary).append(LINE_FEED);
@@ -64,31 +64,43 @@ public class ApplozicMultipartUtility {
 
         FileInputStream inputStream = new FileInputStream(uploadFile);
         byte[] buffer = new byte[4096];
-        int bytesRead = -1;
+        long bytesRead = -1;
         long totalRead = 0;
-        int previousPercent = 0;
+        long previousPercent = 0;
         long totalSize = uploadFile.length();
         if (handler != null) {
-            handler.onUploadStarted(null);
+            android.os.Message msg = handler.obtainMessage();
+            msg.what = MobiComConversationService.UPLOAD_STARTED;
+            msg.getData().putString("error", null);
+            msg.sendToTarget();
+            //handler.onUploadStarted(null);
         }
         while ((bytesRead = inputStream.read(buffer)) != -1) {
             if (Thread.interrupted()) {
                 throw new InterruptedException();
             }
             try {
-                outputStream.write(buffer, 0, bytesRead);
+                outputStream.write(buffer, 0, (int) bytesRead);
                 totalRead += bytesRead;
                 int percentage = (int) ((totalRead / (float) totalSize) * 100);
 
                 if (percentage != previousPercent) {
                     if (handler != null) {
-                        handler.onProgressUpdate(percentage, null);
+                        android.os.Message msg = handler.obtainMessage();
+                        msg.what = MobiComConversationService.UPLOAD_PROGRESS;
+                        msg.arg1 = percentage;
+                        msg.sendToTarget();
+                        //handler.onProgressUpdate(percentage, null);
                     }
                     previousPercent = percentage;
                 }
             } catch (Exception e) {
                 if (handler != null) {
-                    handler.onCompleted(new ApplozicException(e.getMessage()));
+                    android.os.Message msg = handler.obtainMessage();
+                    msg.what = MobiComConversationService.UPLOAD_COMPLETED;
+                    msg.getData().putString("error", e.getMessage());
+                    msg.sendToTarget();
+                    //handler.onCompleted(new ApplozicException(e.getMessage()));
                 }
             }
         }

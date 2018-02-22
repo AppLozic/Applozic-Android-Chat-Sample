@@ -2,8 +2,6 @@ package com.applozic.mobicommons.people.channel;
 
 import com.applozic.mobicommons.json.JsonMarker;
 
-import java.io.Serializable;
-
 /**
  * Created by sunil on 28/12/15.
  */
@@ -13,6 +11,7 @@ public class ChannelUserMapper extends JsonMarker {
     private String userKey;
     private short status;
     private int unreadCount;
+    private Integer role;
 
     public ChannelUserMapper() {
     }
@@ -60,12 +59,36 @@ public class ChannelUserMapper extends JsonMarker {
         this.status = status;
     }
 
+    public Integer getRole() {
+        return role == null ?0:role;
+    }
+
+    public void setRole(Integer role) {
+        this.role = role;
+    }
+
+    public enum UserRole {
+        ADMIN(1),
+        MODERATOR(2),
+        MEMBER(3);
+        private Integer value;
+
+        UserRole(Integer value) {
+            this.value = value;
+        }
+        public Integer getValue() {
+            return value;
+        }
+    }
+
     @Override
     public String toString() {
         return "ChannelUserMapper{" +
                 "key=" + key +
                 ", userKey='" + userKey + '\'' +
                 ", status=" + status +
+                ", unreadCount=" + unreadCount +
+                ", role=" + role +
                 '}';
     }
 }

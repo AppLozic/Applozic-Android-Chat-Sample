@@ -231,7 +231,7 @@
             android:exported="false" />
 
         <service
-            android:name="com.applozic.mobicomkit.uiwidgets.notification.NotificationIntentService"
+            android:name="com.applozic.mobicomkit.api.notification.NotificationIntentService"
             android:permission="android.permission.BIND_JOB_SERVICE"
             android:exported="false" />
 
@@ -239,6 +239,14 @@
             android:name="com.applozic.mobicomkit.api.conversation.ConversationIntentService"
             android:permission="android.permission.BIND_JOB_SERVICE"
             android:exported="false" />
+
+        <service
+            android:exported="false"
+            android:name="com.applozic.mobicomkit.uiwidgets.notification.PushNotificationJobService">
+            <intent-filter>
+                <action android:name="com.firebase.jobdispatcher.ACTION_EXECUTE"/>
+            </intent-filter>
+        </service>
 
         <receiver android:name="com.applozic.mobicomkit.broadcast.TimeChangeBroadcastReceiver">
             <intent-filter>

@@ -3,6 +3,7 @@ package com.applozic.mobicomkit.uiwidgets.conversation;
 import com.applozic.mobicommons.json.JsonMarker;
 
 import java.util.ArrayList;
+import java.util.Map;
 
 /**
  * Created by reytum on 1/8/17.
@@ -10,14 +11,14 @@ import java.util.ArrayList;
 
 public class MobicomMessageTemplate extends JsonMarker {
 
-    private boolean isEnabled;
+    private boolean isEnabled = false;
     private String backgroundColor;
     private String borderColor;
     private String textColor;
     private int cornerRadius;
     private boolean sendMessageOnClick;
     private boolean hideOnSend = false;
-    private ArrayList<String> messageList;
+    private Map<String, String> messageList;
     private MessageContentItem textMessageList;
     private MessageContentItem imageMessageList;
     private MessageContentItem videoMessageList;
@@ -105,11 +106,11 @@ public class MobicomMessageTemplate extends JsonMarker {
         return hideOnSend;
     }
 
-    public ArrayList<String> getMessages() {
+    public Map<String, String> getMessages() {
         return messageList;
     }
 
-    public void setMessages(ArrayList<String> messages) {
+    public void setMessages(Map<String, String> messages) {
         this.messageList = messages;
     }
 
@@ -137,11 +138,11 @@ public class MobicomMessageTemplate extends JsonMarker {
         this.sendMessageOnClick = sendMessageOnClick;
     }
 
-    public class MessageContentItem {
+    public class MessageContentItem extends JsonMarker {
         private boolean showOnSenderSide;
         private boolean showOnReceiverSide;
         private boolean sendMessageOnClick;
-        private ArrayList<String> messageList;
+        private Map<String, String> messageList;
 
         public boolean isShowOnSenderSide() {
             return showOnSenderSide;
@@ -167,11 +168,11 @@ public class MobicomMessageTemplate extends JsonMarker {
             this.sendMessageOnClick = sendMessageOnClick;
         }
 
-        public ArrayList<String> getMessageList() {
+        public Map<String, String> getMessageList() {
             return messageList;
         }
 
-        public void setMessageList(ArrayList<String> messageList) {
+        public void setMessageList(Map<String, String> messageList) {
             this.messageList = messageList;
         }
     }

@@ -33,7 +33,7 @@
             android:layout_height="wrap_content"
             android:visibility="visible">
 
-            <com.applozic.mobicomkit.uiwidgets.conversation.ConversationListView
+            <android.support.v7.widget.RecyclerView
                 android:id="@+id/messageList"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -494,6 +494,4 @@
             android:verticalSpacing="1dp" />
 
     </LinearLayout>
-
-
 </LinearLayout>

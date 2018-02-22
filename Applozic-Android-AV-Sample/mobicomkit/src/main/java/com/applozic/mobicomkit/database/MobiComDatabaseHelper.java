@@ -12,7 +12,7 @@ import com.applozic.mobicommons.commons.core.utils.Utils;
 
 public class MobiComDatabaseHelper extends SQLiteOpenHelper {
 
-    public static final int DB_VERSION = 29;
+    public static final int DB_VERSION = 30;
 
     public static final String _ID = "_id";
     public static final String SMS_KEY_STRING = "smsKeyString";
@@ -71,6 +71,7 @@ public class MobiComDatabaseHelper extends SQLiteOpenHelper {
     public static final String USER_ROLE_TYPE = "userRoleType";
     public static final String LAST_MESSAGED_AT = "lastMessagedAt";
     public static final String URL = "url";
+    public static final String ROLE = "role";
 
 
     public static final String CREATE_SCHEDULE_SMS_TABLE = "create table " + SCHEDULE_SMS_TABLE_NAME + "( "
@@ -151,6 +152,7 @@ public class MobiComDatabaseHelper extends SQLiteOpenHelper {
     private static final String ALTER_CONTACT_TABLE_FOR_ROLE_TYPE = "ALTER TABLE " + CONTACT_TABLE_NAME + " ADD COLUMN " + USER_ROLE_TYPE + " integer default 0";
     private static final String ALTER_CONTACT_TABLE_FOR_LAST_MESSAGED_AT = "ALTER TABLE " + CONTACT_TABLE_NAME + " ADD COLUMN " + LAST_MESSAGED_AT + " integer default 0";
     private static final String ALTER_SMS_TABLE_FOR_FILE_URL = "ALTER TABLE " + SMS + " ADD COLUMN url varchar(2000)";
+    private static final String ALTER_CHANNEL_USER_MAPPER_TABLE_FOR_ROLE = "ALTER TABLE " + CHANNEL_USER_X + " ADD COLUMN " + ROLE + " integer default 0";
     private static final String CREATE_CONTACT_TABLE = " CREATE TABLE contact ( " +
             USERID + " VARCHAR(50) primary key, "
             + FULL_NAME + " VARCHAR(200), "
@@ -196,6 +198,7 @@ public class MobiComDatabaseHelper extends SQLiteOpenHelper {
             + USERID + " varchar(100), "
             + UNREAD_COUNT + " integer, "
             + STATUS + " integer, "
+            + ROLE +" integer default 0,"
             + "UNIQUE (" + CHANNEL_KEY + ", " + USERID + "))";
 
     private static final String CREATE_CONVERSATION_TABLE = " CREATE TABLE conversation ( " +
@@ -377,6 +380,9 @@ public class MobiComDatabaseHelper extends SQLiteOpenHelper {
             }
             if (!DBUtils.existsColumnInTable(database, "sms", URL)) {
                 database.execSQL(ALTER_SMS_TABLE_FOR_FILE_URL);
+            }
+            if (!DBUtils.existsColumnInTable(database, "CHANNEL_USER_X", ROLE)) {
+                database.execSQL(ALTER_CHANNEL_USER_MAPPER_TABLE_FOR_ROLE);
             }
             database.execSQL(CREATE_INDEX_ON_CREATED_AT);
             database.execSQL(CREATE_INDEX_SMS_TYPE);

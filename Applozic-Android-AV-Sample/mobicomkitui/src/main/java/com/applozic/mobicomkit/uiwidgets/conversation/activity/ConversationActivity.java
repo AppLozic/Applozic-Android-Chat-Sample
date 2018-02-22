@@ -250,16 +250,15 @@ public class ConversationActivity extends AppCompatActivity implements MessageCo
         Intent intent = new Intent(this, ApplozicMqttIntentService.class);
         intent.putExtra(ApplozicMqttIntentService.USER_KEY_STRING, userKeyString);
         intent.putExtra(ApplozicMqttIntentService.DEVICE_KEY_STRING, deviceKeyString);
-        ApplozicMqttIntentService.enqueueWork(this,intent);
+        ApplozicMqttIntentService.enqueueWork(this, intent);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        LocalBroadcastManager.getInstance(this).registerReceiver(mobiComKitBroadcastReceiver, BroadcastService.getIntentFilter());
         Intent subscribeIntent = new Intent(this, ApplozicMqttIntentService.class);
         subscribeIntent.putExtra(ApplozicMqttIntentService.SUBSCRIBE, true);
-        ApplozicMqttIntentService.enqueueWork(this,subscribeIntent);
+        ApplozicMqttIntentService.enqueueWork(this, subscribeIntent);
 
         if (!Utils.isInternetAvailable(getApplicationContext())) {
             String errorMessage = getResources().getString(R.string.internet_connection_not_available);
@@ -269,7 +268,6 @@ public class ConversationActivity extends AppCompatActivity implements MessageCo
 
     @Override
     protected void onPause() {
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(mobiComKitBroadcastReceiver);
         //ApplozicMqttService.getInstance(this).unSubscribe();
         super.onPause();
     }
@@ -404,7 +402,7 @@ public class ConversationActivity extends AppCompatActivity implements MessageCo
         if (!takeOrder) {
             Intent lastSeenStatusIntent = new Intent(this, UserIntentService.class);
             lastSeenStatusIntent.putExtra(UserIntentService.USER_LAST_SEEN_AT_STATUS, true);
-            UserIntentService.enqueueWork(this,lastSeenStatusIntent);
+            UserIntentService.enqueueWork(this, lastSeenStatusIntent);
         }
 
         if (ApplozicClient.getInstance(this).isAccountClosed() || ApplozicClient.getInstance(this).isNotAllowed()) {
@@ -427,6 +425,7 @@ public class ConversationActivity extends AppCompatActivity implements MessageCo
                 MobiComUserPreference.getInstance(this).setContactGroupIdList(userIdLists);
             }
         }
+        LocalBroadcastManager.getInstance(this).registerReceiver(mobiComKitBroadcastReceiver, BroadcastService.getIntentFilter());
     }
 
     @Override
@@ -474,6 +473,7 @@ public class ConversationActivity extends AppCompatActivity implements MessageCo
         searchView.setOnQueryTextListener(this);
         searchView.setSubmitButtonEnabled(true);
         searchView.setIconified(true);
+
         return super.onCreateOptionsMenu(menu);
     }
 
@@ -1223,6 +1223,9 @@ public class ConversationActivity extends AppCompatActivity implements MessageCo
     protected void onDestroy() {
         super.onDestroy();
         try {
+            if (mobiComKitBroadcastReceiver != null) {
+                LocalBroadcastManager.getInstance(this).unregisterReceiver(mobiComKitBroadcastReceiver);
+            }
             if (connectivityReceiver != null) {
                 unregisterReceiver(connectivityReceiver);
             }

@@ -7,9 +7,9 @@ import com.applozic.mobicomkit.api.conversation.Message;
  */
 
 public interface ApplozicUIListener {
-    void onNewMessage(Message message);
+    void onMessageSent(Message message);
 
-    void onChannelNameUpdated();
+    void onMessageReceived(Message message);
 
     void onLoadMore(boolean loadMore);
 
@@ -31,11 +31,11 @@ public interface ApplozicUIListener {
 
     void onMqttDisconnected();
 
-    void onChannelSync();
-
-    void onChannelTitleUpdated();
+    void onChannelUpdated();
 
     void onConversationRead(String userId, boolean isGroup);
 
     void onUserDetailUpdated(String userId);
+
+    void onMessageMetadataUpdated(String keyString);
 }

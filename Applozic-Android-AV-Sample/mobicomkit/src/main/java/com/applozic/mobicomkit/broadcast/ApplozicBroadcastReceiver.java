@@ -37,14 +37,18 @@ public class ApplozicBroadcastReceiver extends BroadcastReceiver {
         Utils.printLog(context, TAG, "Received broadcast, action: " + action + ", message: " + message);
 
         if (message != null && !message.isSentToMany()) {
-            applozicUIListener.onNewMessage(message);
+            if (!message.isTypeOutbox()) {
+                applozicUIListener.onMessageReceived(message);
+            }
         } else if (message != null && message.isSentToMany() && BroadcastService.INTENT_ACTIONS.SYNC_MESSAGE.toString().equals(intent.getAction())) {
             for (String toField : message.getTo().split(",")) {
                 Message singleMessage = new Message(message);
                 singleMessage.setKeyString(message.getKeyString());
                 singleMessage.setTo(toField);
                 singleMessage.processContactIds(context);
-                applozicUIListener.onNewMessage(message);
+                if (!message.isTypeOutbox()) {
+                    applozicUIListener.onMessageReceived(message);
+                }
             }
         }
 
@@ -54,13 +58,13 @@ public class ApplozicBroadcastReceiver extends BroadcastReceiver {
         if (BroadcastService.INTENT_ACTIONS.INSTRUCTION.toString().equals(action)) {
             //InstructionUtil.showInstruction(context, intent.getIntExtra("resId", -1), intent.getBooleanExtra("actionable", false), R.color.instruction_color);
         } else if (BroadcastService.INTENT_ACTIONS.UPDATE_CHANNEL_NAME.toString().equals(action)) {
-            applozicUIListener.onChannelNameUpdated();
+            //applozicUIListener.onChannelNameUpdated();
         } else if (BroadcastService.INTENT_ACTIONS.FIRST_TIME_SYNC_COMPLETE.toString().equals(action)) {
             //applozicUIListener.downloadConversations(true);
         } else if (BroadcastService.INTENT_ACTIONS.LOAD_MORE.toString().equals(action)) {
             applozicUIListener.onLoadMore(intent.getBooleanExtra("loadMore", true));
         } else if (BroadcastService.INTENT_ACTIONS.MESSAGE_SYNC_ACK_FROM_SERVER.toString().equals(action)) {
-            //applozicUIListener.updateMessageKeyString(message);
+            applozicUIListener.onMessageSent(message);
         } else if (BroadcastService.INTENT_ACTIONS.SYNC_MESSAGE.toString().equals(intent.getAction())) {
             applozicUIListener.onMessageSync(message, keyString);
         } else if (BroadcastService.INTENT_ACTIONS.DELETE_MESSAGE.toString().equals(intent.getAction())) {
@@ -97,15 +101,17 @@ public class ApplozicBroadcastReceiver extends BroadcastReceiver {
         } else if (BroadcastService.INTENT_ACTIONS.MQTT_DISCONNECTED.toString().equals(action)) {
             applozicUIListener.onMqttDisconnected();
         } else if (BroadcastService.INTENT_ACTIONS.CHANNEL_SYNC.toString().equals(action)) {
-            applozicUIListener.onChannelSync();
+            applozicUIListener.onChannelUpdated();
         } else if (BroadcastService.INTENT_ACTIONS.UPDATE_TITLE_SUBTITLE.toString().equals(action)) {
-            applozicUIListener.onChannelTitleUpdated();
+            //applozicUIListener.onChannelTitleUpdated();
         } else if (BroadcastService.INTENT_ACTIONS.CONVERSATION_READ.toString().equals(action)) {
             String currentId = intent.getStringExtra("currentId");
             boolean isGroup = intent.getBooleanExtra("isGroup", false);
             applozicUIListener.onConversationRead(currentId, isGroup);
         } else if (BroadcastService.INTENT_ACTIONS.UPDATE_USER_DETAIL.toString().equals(action)) {
             applozicUIListener.onUserDetailUpdated(intent.getStringExtra("contactId"));
+        } else if (BroadcastService.INTENT_ACTIONS.MESSAGE_METADATA_UPDATE.toString().equals(action)) {
+            applozicUIListener.onMessageMetadataUpdated(keyString);
         }
     }
 }

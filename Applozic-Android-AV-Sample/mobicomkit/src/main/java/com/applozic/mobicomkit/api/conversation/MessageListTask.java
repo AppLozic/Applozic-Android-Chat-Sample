@@ -63,7 +63,7 @@ public class MessageListTask extends AsyncTask<Void, Void, List<Message>> {
         List<Message> messages = new ArrayList<Message>();
 
         if (isForMessageList) {
-            if (messageList != null && !messageList.isEmpty()) {
+            if (messageList != null) {
                 for (Message message : messageList) {
                     if ((message.getGroupId() == null || message.getGroupId() == 0) && !recList.contains(message.getContactIds())) {
                         recList.add(message.getContactIds());
@@ -77,9 +77,9 @@ public class MessageListTask extends AsyncTask<Void, Void, List<Message>> {
             }
         }
         if (handler != null) {
-            if (isForMessageList && !messages.isEmpty()) {
+            if (isForMessageList) {
                 handler.onResult(messages, exception);
-            } else if (messageList != null && !messageList.isEmpty()) {
+            } else if (messageList != null) {
                 handler.onResult(messageList, exception);
             }
         }

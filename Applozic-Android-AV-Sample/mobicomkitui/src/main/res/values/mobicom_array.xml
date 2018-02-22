@@ -43,6 +43,7 @@
     <string-array name="channel_users_menu_option">
         <item>Message</item>
         <item>Remove</item>
+        <item>Make group admin</item>
     </string-array>
 
     <!--Multimedia options -->

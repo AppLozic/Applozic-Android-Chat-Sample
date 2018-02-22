@@ -70,6 +70,7 @@ import com.applozic.mobicommons.file.FileUtils;
 import com.applozic.mobicommons.json.GsonUtils;
 import com.applozic.mobicommons.people.SearchListFragment;
 import com.applozic.mobicommons.people.channel.Channel;
+import com.applozic.mobicommons.people.channel.ChannelMetadata;
 import com.applozic.mobicommons.people.contact.Contact;
 
 import java.util.ArrayList;
@@ -467,6 +468,7 @@ public class ContactSelectionFragment extends ListFragment implements SearchList
                     if (!TextUtils.isEmpty(imageUrl)) {
                         channelInfo.setImageUrl(imageUrl);
                     }
+
                     if (groupType == Channel.GroupType.BROADCAST.getValue()) {
                         channelInfo.setType(groupType);
                     } else if (alCustomizationSettings != null) {

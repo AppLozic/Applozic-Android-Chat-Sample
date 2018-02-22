@@ -70,7 +70,6 @@ public class MobiComMessageService {
         //Todo: this can be changed to DeviceContactService for device contacts usage.
         this.baseContactService = new AppContactService(context);
         fileClientService = new FileClientService(context);
-        ;
         this.userService = UserService.getInstance(context);
     }
 

@@ -113,7 +113,7 @@ class AttachmentDownloader extends MobiComKitClientService implements Runnable {
                  */
                 mPhotoTask.handleDownloadState(HTTP_STATE_STARTED);
                 // Downloads the image and catches IO errors
-                loadAttachmentImage(mPhotoTask.getMessage(), mPhotoTask.getDownloadHandler(), mPhotoTask.getContext());
+                loadAttachmentImage(mPhotoTask.getMessage(), mPhotoTask.getContext());
             }
 
             /*
@@ -151,7 +151,7 @@ class AttachmentDownloader extends MobiComKitClientService implements Runnable {
         }
     }
 
-    public void loadAttachmentImage(Message message, MediaDownloadProgressHandler handler, Context context) {
+    public void loadAttachmentImage(Message message, Context context) {
         File file = null;
         try {
             InputStream inputStream = null;
@@ -185,22 +185,25 @@ class AttachmentDownloader extends MobiComKitClientService implements Runnable {
 
                 OutputStream output = new FileOutputStream(file);
                 byte data[] = new byte[1024];
-                int totalSize = fileMeta.getSize();
-                int progressCount = 0;
+                long totalSize = fileMeta.getSize();
+                long progressCount = 0;
                 int count = 0;
                 int prevPrecentage = 0;
                 while ((count = inputStream.read(data)) != -1) {
                     output.write(data, 0, count);
                     progressCount = progressCount + count;
+                    long percentage =  progressCount * 100 / totalSize;
                     android.os.Message msg = new android.os.Message();
-                    int percentage = progressCount * 100 / totalSize;
                     //TODO: pecentage should be transfer via handler
                     //Message code 2 represents image is successfully downloaded....
-                    if (percentage != prevPrecentage) {
-                        if (handler != null) {
-                            handler.onProgressUpdate(percentage, null);
-                        }
-                        prevPrecentage = percentage;
+                    if (percentage + 1 != prevPrecentage) {
+                        mPhotoTask.handleDownloadState(5);
+                        mPhotoTask.downloadProgress((int) percentage + 1);
+                        msg.what = 5;
+                        msg.arg1 = (int) percentage + 1;
+                        msg.obj = this;
+                        //msg.sendToTarget();
+                        prevPrecentage = (int) percentage + 1;
                     }
                     if ((percentage % 10 == 0)) {
                         msg.what = 1;
@@ -221,10 +224,6 @@ class AttachmentDownloader extends MobiComKitClientService implements Runnable {
             arrayList.add(file.getAbsolutePath());
             message.setFilePaths(arrayList);
 
-            if (handler != null) {
-                handler.onCompleted(message, null);
-            }
-
             MediaScannerConnection.scanFile(mPhotoTask.getContext(),
                     new String[]{file.toString()}, null,
                     new MediaScannerConnection.OnScanCompletedListener() {
@@ -240,9 +239,6 @@ class AttachmentDownloader extends MobiComKitClientService implements Runnable {
         } catch (Exception ex) {
             //If partial file got created delete it, we try to download it again
             if (file != null && file.exists()) {
-                if (handler != null) {
-                    handler.onCompleted(null, new ApplozicException("Exception occured while downloading"));
-                }
                 Utils.printLog(context, TAG, " Exception occured while downloading :" + file.getAbsolutePath());
                 file.delete();
             }
@@ -285,6 +281,8 @@ class AttachmentDownloader extends MobiComKitClientService implements Runnable {
         Context getContext();
 
         MediaDownloadProgressHandler getDownloadHandler();
+
+        void downloadProgress(int progress);
 
         String getContentType();
     }

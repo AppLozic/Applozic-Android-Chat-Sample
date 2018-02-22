@@ -85,6 +85,7 @@ public class AttachmentTask implements
     private Thread mCurrentThread;
     private Message message;
     private MediaDownloadProgressHandler mediaDownloadProgressHandler;
+    private int progress;
 
     /**
      * Creates an PhotoTask containing a download object and a decoder object.
@@ -224,6 +225,15 @@ public class AttachmentTask implements
     }
 
     @Override
+    public void downloadProgress(int progress) {
+        this.progress = progress;
+    }
+
+    public int getProgress() {
+        return progress;
+    }
+
+    @Override
     public String getContentType() {
         //This is just an extra check yo avoid NPE ..but it should not come.
         if (message == null) {
@@ -336,12 +346,12 @@ public class AttachmentTask implements
                 sPhotoManager.attachmentTaskList.remove(this);
                 break;
             case AttachmentDownloader.HTTP_STATE_FAILED:
-                if (mediaDownloadProgressHandler != null) {
-                    mediaDownloadProgressHandler.onCompleted(null,new ApplozicException("Download failed"));
-                }
                 outState = AttachmentManager.DOWNLOAD_FAILED;
                 sPhotoManager.attachmentInProgress.remove(getMessage().getKeyString());
                 sPhotoManager.attachmentTaskList.remove(this);
+                break;
+            case AttachmentManager.DOWNLOAD_PROGRESS:
+                outState = AttachmentManager.DOWNLOAD_PROGRESS;
                 break;
             default:
                 outState = AttachmentManager.DOWNLOAD_STARTED;

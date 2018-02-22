@@ -75,6 +75,7 @@ public class AttachmentManager {
     static final int DOWNLOAD_COMPLETE = 2;
     static final int DECODE_STARTED = 3;
     static final int TASK_COMPLETE = 4;
+    public static final int DOWNLOAD_PROGRESS = 5;
     private static final String TAG = "AttachmentManager";
     // Sets the size of the storage that's used to cache images
     // Sets the amount of time an idle thread will wait for a task before terminating
@@ -216,8 +217,12 @@ public class AttachmentManager {
                             attachmentTask.getMessage().setAttDownloadInProgress(true);
                             attachmentTask.getDownloadHandler().onDownloadStarted();
                             break;
+                        case DOWNLOAD_PROGRESS:
+                            attachmentTask.getDownloadHandler().onProgressUpdate(inputMessage.arg1, null);
+                            break;
                         case DOWNLOAD_COMPLETE:
                             attachmentTask.getMessage().setAttDownloadInProgress(false);
+                            attachmentTask.getDownloadHandler().onCompleted(attachmentTask.getMessage(), null);
                             break;
                         case DECODE_STARTED:
                             break;
@@ -233,7 +238,6 @@ public class AttachmentManager {
                         case DOWNLOAD_FAILED:
                             //localView.setStatusResource(R.drawable.imagedownloadfailed);
                             attachmentTask.getMessage().setAttDownloadInProgress(false);
-                            localView.getDownloadProgressLayout().setVisibility(View.GONE);
                             attachmentTask.getDownloadHandler().onCompleted(null, new ApplozicException("Download failed"));
                             // Attempts to re-use the Task object
                             recycleTask(attachmentTask);
@@ -649,9 +653,20 @@ public class AttachmentManager {
                     //We need not to cache the Data here ..as we have nothing to load
                     // ...directly sending TASK complete message is enough
                     mHandler.obtainMessage(TASK_COMPLETE, photoTask).sendToTarget();
-                }
 
-                // In all other cases, pass along the message without any other action.
+                    if (photoTask.getDownloadHandler() != null) {
+                        mHandler.obtainMessage(DOWNLOAD_COMPLETE, photoTask).sendToTarget();
+                    }
+                }
+                break;
+
+            // In all other cases, pass along the message without any other action.
+            case DOWNLOAD_PROGRESS:
+                Message msg = mHandler.obtainMessage(DOWNLOAD_PROGRESS, photoTask);
+                msg.arg1 = photoTask.getProgress();
+                msg.sendToTarget();
+                break;
+
             default:
                 mHandler.obtainMessage(state, photoTask).sendToTarget();
                 break;

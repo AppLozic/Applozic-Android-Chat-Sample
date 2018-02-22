@@ -1,15 +1,18 @@
 package com.applozic.mobicomkit.uiwidgets.attachmentview;
 
 import android.content.Context;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.widget.SeekBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.applozic.mobicomkit.uiwidgets.R;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -20,12 +23,13 @@ import static android.content.Context.TELEPHONY_SERVICE;
  * Created by Rahul-PC on 28-02-2017.
  */
 
-public class ApplozicAudioManager {
+public class ApplozicAudioManager implements AudioManager.OnAudioFocusChangeListener {
     private static ApplozicAudioManager myObj;
     private final TelephonyManager mTelephonyMgr;
     public ApplozicDocumentView currentView;
     Map<String, MediaPlayer> pool = new HashMap<>();
     Context context;
+    AudioManager audioManager;
     int maxsize = 5;
     String TAG = "ApplozicAudioManager";
     String audio_duration;
@@ -35,21 +39,17 @@ public class ApplozicAudioManager {
     private ApplozicAudioManager(Context context) {
         this.context = context;
         mTelephonyMgr = (TelephonyManager) context.getSystemService(TELEPHONY_SERVICE);
+        audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
     }
 
     public static ApplozicAudioManager getInstance(Context context) {
-        try {
-            if (myObj == null) {
-                myObj = new ApplozicAudioManager(context.getApplicationContext());
-            }
-            return myObj;
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (myObj == null) {
+            myObj = new ApplozicAudioManager(context.getApplicationContext());
         }
-        return null;
+        return myObj;
     }
 
-    void play(Uri uri, final ApplozicDocumentView view) {
+    void play(final Uri uri, final ApplozicDocumentView view) {
         final String key = view.message.getKeyString();
         MediaPlayer mp = pool.get(key);
         if (mp != null) {
@@ -58,7 +58,9 @@ public class ApplozicAudioManager {
                 return;
             } else {
                 mp.seekTo(mp.getCurrentPosition());
-                mp.start();
+                if (requestAudioFocus()) {
+                    mp.start();
+                }
             }
         } else {
             mp = new MediaPlayer();
@@ -80,7 +82,9 @@ public class ApplozicAudioManager {
         try {
             if (context != null) {
                 mp.setDataSource(context, uri);
-                mp.prepare();
+                if (requestAudioFocus()) {
+                    mp.prepare();
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -97,6 +101,7 @@ public class ApplozicAudioManager {
                 mp.release();
                 pool.remove(key);
                 currentView.setAudioIcons();
+                updateAudioDuration(view.audio_duration_textView, uri.getPath());
             }
         });
         currentView.audioseekbar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -110,6 +115,13 @@ public class ApplozicAudioManager {
 
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                int duration = progress / 1000;
+                int min = duration / 60;
+                int seconds = duration % 60;
+                if (view != null && view.audio_duration_textView != null) {
+                    view.audio_duration_textView.setText(String.format("%02d:%02d", min, seconds));
+                }
+
                 if (fromUser) {
                     if (getMediaPlayer(key) != null) {
                         getMediaPlayer(key).seekTo(progress);
@@ -158,21 +170,26 @@ public class ApplozicAudioManager {
     }
 
     public MediaPlayer getMediaPlayer(String key) {
+        if (key == null) {
+            return null;
+        }
         return pool.get(key);
     }
 
     public void audiostop() {
-        MediaPlayer temp;
-        Iterator it = pool.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry pair = (Map.Entry) it.next();
-            {
-                temp = (MediaPlayer) pair.getValue();
-                temp.stop();
-                temp.release();
+        if (pool != null) {
+            MediaPlayer temp;
+            Iterator it = pool.entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry pair = (Map.Entry) it.next();
+                {
+                    temp = (MediaPlayer) pair.getValue();
+                    temp.stop();
+                    temp.release();
+                }
             }
+            pool.clear();
         }
-        pool.clear();
     }
 
     public String refreshAudioDuration(String filePath) {
@@ -191,5 +208,58 @@ public class ApplozicAudioManager {
         }
         audio_duration = String.format("%02d:%02d", minute, second);
         return audio_duration;
+    }
+
+    public void updateAudioDuration(final TextView durationTextView, String filePath) {
+        MediaPlayer mediaPlayer = new MediaPlayer();
+
+        if (durationTextView == null || filePath == null) {
+            return;
+        }
+
+        try {
+            mediaPlayer.setDataSource(filePath);
+            mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                @Override
+                public void onPrepared(MediaPlayer mediaPlayer) {
+                    int currentProgress = mediaPlayer.getDuration() / 1000;
+                    int minutes = currentProgress / 60;
+                    int seconds = (currentProgress % 60);
+                    if (durationTextView != null) {
+                        durationTextView.setText(String.format("%02d:%02d", minutes, seconds));
+                    }
+                    mediaPlayer.release();
+                }
+            });
+            mediaPlayer.prepareAsync();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void onAudioFocusChange(int i) {
+       /* switch (i) {
+            case AudioManager.AUDIOFOCUS_GAIN:
+                break;
+            case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
+                break;
+            case AudioManager.AUDIOFOCUS_LOSS:
+                break;
+            case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
+                break;
+        }*/
+    }
+
+    private boolean requestAudioFocus() {
+        boolean gotFocus;
+        int audioFocus = audioManager.requestAudioFocus(this, AudioManager.STREAM_MUSIC,
+                AudioManager.AUDIOFOCUS_GAIN);
+        if (audioFocus == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+            gotFocus = true;
+        } else {
+            gotFocus = false;
+        }
+        return gotFocus;
     }
 }

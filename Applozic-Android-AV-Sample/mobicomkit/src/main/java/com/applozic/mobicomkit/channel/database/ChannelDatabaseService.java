@@ -50,6 +50,7 @@ public class ChannelDatabaseService {
         channelUserMapper.setUserKey(cursor.getString(cursor.getColumnIndex(MobiComDatabaseHelper.USERID)));
         channelUserMapper.setKey(cursor.getInt(cursor.getColumnIndex(MobiComDatabaseHelper.CHANNEL_KEY)));
         channelUserMapper.setUnreadCount(cursor.getShort(cursor.getColumnIndex(MobiComDatabaseHelper.UNREAD_COUNT)));
+        channelUserMapper.setRole(cursor.getInt(cursor.getColumnIndex(MobiComDatabaseHelper.ROLE)));
         return channelUserMapper;
     }
 
@@ -141,6 +142,7 @@ public class ChannelDatabaseService {
             if (channelUserMapper.getStatus() != 0) {
                 contentValues.put(MobiComDatabaseHelper.STATUS, channelUserMapper.getStatus());
             }
+            contentValues.put(MobiComDatabaseHelper.ROLE, channelUserMapper.getRole());
         }
         return contentValues;
     }
@@ -471,5 +473,52 @@ public class ChannelDatabaseService {
         }
         return null;
     }
+
+    public void updateRoleInChannelUserMapper(Integer channelKey,String userId,Integer role) {
+        ContentValues contentValues =  new ContentValues();
+        contentValues.put(MobiComDatabaseHelper.ROLE,role);
+        dbHelper.getWritableDatabase().update(CHANNEL_USER_X,contentValues, MobiComDatabaseHelper.CHANNEL_KEY + "=? AND "+ MobiComDatabaseHelper.USERID+"=?", new String[]{String.valueOf(channelKey),userId});
+    }
+
+    public ChannelUserMapper getChannelUserByChannelKey(final Integer channelKey) {
+        ChannelUserMapper channelUserMapper = null;
+        try {
+            String structuredNameWhere = MobiComDatabaseHelper.CHANNEL_KEY + " =? AND "+MobiComDatabaseHelper.USERID +"="+MobiComUserPreference.getInstance(context).getUserId();
+            SQLiteDatabase db = dbHelper.getWritableDatabase();
+            Cursor cursor = db.query(CHANNEL_USER_X, null, structuredNameWhere, new String[]{String.valueOf(channelKey)}, null, null, null);
+            if (cursor != null) {
+                if (cursor.getCount() > 0) {
+                    cursor.moveToFirst();
+                    channelUserMapper = getChannelUser(cursor);
+                }
+                cursor.close();
+            }
+            dbHelper.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return channelUserMapper;
+    }
+
+    public ChannelUserMapper getChannelUserByChannelKeyAndUserId(final Integer channelKey,final  String userId) {
+        ChannelUserMapper channelUserMapper = null;
+        try {
+            String structuredNameWhere = MobiComDatabaseHelper.CHANNEL_KEY + " =? AND "+MobiComDatabaseHelper.USERID+" =?";
+            SQLiteDatabase db = dbHelper.getWritableDatabase();
+            Cursor cursor = db.query(CHANNEL_USER_X, null, structuredNameWhere, new String[]{String.valueOf(channelKey),userId}, null, null, null);
+            if (cursor != null) {
+                if (cursor.getCount() > 0) {
+                    cursor.moveToFirst();
+                    channelUserMapper = getChannelUser(cursor);
+                }
+                cursor.close();
+            }
+            dbHelper.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return channelUserMapper;
+    }
+
 
 }

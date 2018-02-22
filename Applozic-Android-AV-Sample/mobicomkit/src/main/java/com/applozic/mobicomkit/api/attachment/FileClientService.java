@@ -7,6 +7,7 @@ import android.graphics.BitmapFactory;
 import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.os.Environment;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.text.TextUtils;
 
@@ -242,7 +243,7 @@ public class FileClientService extends MobiComKitClientService {
         return null;
     }
 
-    public String uploadBlobImage(String path, MediaUploadProgressHandler handler) throws UnsupportedEncodingException {
+    public String uploadBlobImage(String path, Handler handler) throws UnsupportedEncodingException {
         try {
             ApplozicMultipartUtility multipart = new ApplozicMultipartUtility(getUploadKey(), "UTF-8", context);
             if (ApplozicClient.getInstance(context).isCustomStorageServiceEnabled()) {
