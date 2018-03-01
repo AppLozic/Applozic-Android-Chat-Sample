@@ -271,9 +271,10 @@ Paste the following in your androidmanifest.xml:
           android:permission="android.permission.BIND_JOB_SERVICE"
           android:exported="false" />
 
-<service android:name="com.applozic.mobicomkit.uiwidgets.notification.NotificationIntentService"
-         android:permission="android.permission.BIND_JOB_SERVICE"
-         android:exported="false" />
+<service
+            android:name="com.applozic.mobicomkit.api.notification.NotificationIntentService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:exported="false" />
 
 <service android:exported="false"
          android:name="com.applozic.mobicomkit.uiwidgets.notification.PushNotificationJobService">
