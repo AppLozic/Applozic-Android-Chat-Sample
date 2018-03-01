@@ -61,11 +61,17 @@ public class ApplozicMqttIntentService extends JobIntentService {
         boolean subscribeToTyping = intent.getBooleanExtra(SUBSCRIBE_TO_TYPING, false);
         if (subscribeToTyping) {
             ApplozicMqttService.getInstance(getApplicationContext()).subscribeToTypingTopic(channel);
+            if (channel != null && Channel.GroupType.OPEN.getValue().equals(channel.getType())) {
+                ApplozicMqttService.getInstance(getApplicationContext()).subscribeToOpenGroupTopic(channel);
+            }
             return;
         }
         boolean unSubscribeToTyping = intent.getBooleanExtra(UN_SUBSCRIBE_TO_TYPING, false);
         if (unSubscribeToTyping) {
             ApplozicMqttService.getInstance(getApplicationContext()).unSubscribeToTypingTopic(channel);
+            if (channel != null && Channel.GroupType.OPEN.getValue().equals(channel.getType())) {
+                ApplozicMqttService.getInstance(getApplicationContext()).unSubscribeToOpenGroupTopic(channel);
+            }
             return;
         }
         String userKeyString = intent.getStringExtra(USER_KEY_STRING);

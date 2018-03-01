@@ -112,7 +112,7 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
     protected VideoCallNotificationHelper videoCallNotificationHelper;
     protected Contact contactToCall;
     protected Token token;
-    static final  String CONNECTIVITY_CHANGE = "android.net.conn.CONNECTIVITY_CHANGE";
+    static final String CONNECTIVITY_CHANGE = "android.net.conn.CONNECTIVITY_CHANGE";
     // ************** APPLOZIC NOTIFICATION AND PROFILE ***************************//
     protected boolean answered;
     protected ProgressDialog progress;
@@ -238,7 +238,12 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
             // Share your microphone
             localAudioTrack = LocalAudioTrack.create(this, true);
             // Share your camera
-            cameraCapturer = new CameraCapturer(this, CameraCapturer.CameraSource.FRONT_CAMERA);
+            try {
+                cameraCapturer = new CameraCapturer(this, CameraCapturer.CameraSource.FRONT_CAMERA);
+            }catch(IllegalStateException e){
+                Utils.printLog(this,TAG,"Front camera not found on device, using back camera..");
+                cameraCapturer = new CameraCapturer(this, CameraCapturer.CameraSource.BACK_CAMERA);
+            }
             localVideoTrack = LocalVideoTrack.create(this, true, cameraCapturer);
             primaryVideoView.setMirror(true);
             if (videoCall) {
@@ -840,7 +845,8 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
                             .setOnAudioFocusChangeListener(
                                     new AudioManager.OnAudioFocusChangeListener() {
                                         @Override
-                                        public void onAudioFocusChange(int i) { }
+                                        public void onAudioFocusChange(int i) {
+                                        }
                                     })
                             .build();
             audioManager.requestAudioFocus(focusRequest);
@@ -849,7 +855,6 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
                     AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
         }
     }
-
 
 
     @Override

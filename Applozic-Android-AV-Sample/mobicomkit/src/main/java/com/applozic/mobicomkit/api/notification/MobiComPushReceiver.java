@@ -104,7 +104,7 @@ MobiComPushReceiver {
     public static boolean isMobiComPushNotification(Map<String, String> data) {
 
         //This is to identify collapse key sent in notification..
-        if (data == null && data.isEmpty()) {
+        if (data == null || data.isEmpty()) {
             return false;
         }
 

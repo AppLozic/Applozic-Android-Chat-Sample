@@ -444,7 +444,7 @@ public class Message extends JsonMarker {
         }
 
         if (getKeyString() != null && message.getKeyString() != null) {
-            return getKeyString().equals(message.getKeyString());
+            return (getKeyString().equals(message.getKeyString())|| getCreatedAtTime() != null && message.getCreatedAtTime() != null && getCreatedAtTime().equals(message.getCreatedAtTime()));
         }
 
        /* if ((isSentToMany() && !getContactIds().contains(message.getContactIds())) || (message.isSentToMany() && !message.getContactIds().contains(getContactIds()))) {

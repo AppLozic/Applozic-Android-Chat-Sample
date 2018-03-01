@@ -19,6 +19,7 @@ import java.util.List;
 public class ConversationIntentService extends JobIntentService {
 
     public static final String SYNC = "AL_SYNC";
+    public static final String AL_MESSAGE = "AL_MESSAGE";
     private static final String TAG = "ConversationIntent";
     public static final String MESSAGE_METADATA_UPDATE = "MessageMetadataUpdate";
     public static final String MUTED_USER_LIST_SYNC = "MutedUserListSync";
@@ -50,6 +51,7 @@ public class ConversationIntentService extends JobIntentService {
             return;
         }
         boolean sync = intent.getBooleanExtra(SYNC, false);
+        Utils.printLog(ConversationIntentService.this, TAG, "Syncing messages service started: " + sync);
         boolean metadataSync = intent.getBooleanExtra(MESSAGE_METADATA_UPDATE, false);
         boolean mutedUserListSync = intent.getBooleanExtra(MUTED_USER_LIST_SYNC, false);
 
@@ -67,11 +69,17 @@ public class ConversationIntentService extends JobIntentService {
 
         Utils.printLog(ConversationIntentService.this, TAG, "Syncing messages service started: " + sync);
 
-        if (sync) {
-            mobiComMessageService.syncMessages();
+        Message message = (Message) intent.getSerializableExtra(AL_MESSAGE);
+
+        if (message != null) {
+            mobiComMessageService.processInstantMessage(message);
         } else {
-            Thread thread = new Thread(new ConversationSync());
-            thread.start();
+            if (sync) {
+                mobiComMessageService.syncMessages();
+            } else {
+                Thread thread = new Thread(new ConversationSync());
+                thread.start();
+            }
         }
     }
 

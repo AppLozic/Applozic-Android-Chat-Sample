@@ -232,7 +232,7 @@ public class MobiComMessageService {
         }
 
         Utils.printLog(context, TAG, "Updating delivery status: " + message.getPairedMessageKeyString() + ", " + userPreferences.getUserId() + ", " + userPreferences.getContactNumber());
-        //messageClientService.updateDeliveryStatus(message.getPairedMessageKeyString(), userPreferences.getUserId(), userPreferences.getContactNumber());
+        messageClientService.updateDeliveryStatus(message.getPairedMessageKeyString(), userPreferences.getUserId(), userPreferences.getContactNumber());
         return receiverContact;
     }
 
@@ -530,5 +530,18 @@ public class MobiComMessageService {
         sms.setDeviceKeyString(userPreferences.getDeviceKeyString());
         sms.setSource(Message.Source.MT_MOBILE_APP.getValue());
         messageDatabaseService.createMessage(sms);
+    }
+
+    public synchronized void processInstantMessage(Message message) {
+        if (!message.hasAttachment()) {
+            if (!baseContactService.isContactPresent(message.getContactIds())) {
+                userService.processUserDetails(message.getContactIds());
+            }
+            Channel channel = ChannelService.getInstance(context).getChannelInfo(message.getGroupId());
+            if (channel == null) {
+                return;
+            }
+            BroadcastService.sendMessageUpdateBroadcast(context, BroadcastService.INTENT_ACTIONS.SYNC_MESSAGE.toString(), message);
+        }
     }
 }

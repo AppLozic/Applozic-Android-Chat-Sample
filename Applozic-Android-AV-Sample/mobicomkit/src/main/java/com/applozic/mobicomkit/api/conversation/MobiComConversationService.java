@@ -43,6 +43,8 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class MobiComConversationService {
@@ -145,7 +147,7 @@ public class MobiComConversationService {
 
         if (channel != null) {
             Channel newChannel = ChannelService.getInstance(context).getChannelByChannelKey(channel.getKey());
-            isServerCallNotRequired = (newChannel != null && !Channel.GroupType.OPEN.getValue().equals(newChannel.getType()) || channelService.processIsUserPresentInChannel(channel.getKey()));
+            isServerCallNotRequired = (newChannel != null && !Channel.GroupType.OPEN.getValue().equals(newChannel.getType()));
         } else if (contact != null) {
             isServerCallNotRequired = true;
         }
@@ -238,7 +240,9 @@ public class MobiComConversationService {
                     if (messageDatabaseService.isMessagePresent(message.getKeyString(), Message.ReplyMessage.HIDE_MESSAGE.getValue())) {
                         messageDatabaseService.updateMessageReplyType(message.getKeyString(), Message.ReplyMessage.NON_HIDDEN.getValue());
                     } else {
-                        messageDatabaseService.createMessage(message);
+                        if (isServerCallNotRequired || contact == null && channel == null) {
+                            messageDatabaseService.createMessage(message);
+                        }
                     }
                     if (contact == null && channel == null) {
                         if (message.isHidden()) {
@@ -252,6 +256,9 @@ public class MobiComConversationService {
                             }
                         }
                     }
+                }
+                if (!isServerCallNotRequired) {
+                    messageList.add(message);
                 }
             }
             if (contact == null && channel == null) {
@@ -303,12 +310,23 @@ public class MobiComConversationService {
                         fileClientService.loadContactsvCard(replyMessage);
                     }
                     replyMessage.setReplyMessage(Message.ReplyMessage.HIDE_MESSAGE.getValue());
-                    messageDatabaseService.createMessage(replyMessage);
+                    if (isServerCallNotRequired || contact == null && channel == null) {
+                        messageDatabaseService.createMessage(replyMessage);
+                    }
                 }
             }
         }
 
-        return finalMessageList;
+        if (messageList != null && !messageList.isEmpty()) {
+            Collections.sort(messageList, new Comparator<Message>() {
+                @Override
+                public int compare(Message lhs, Message rhs) {
+                    return lhs.getCreatedAtTime().compareTo(rhs.getCreatedAtTime());
+                }
+            });
+        }
+
+        return channel != null && Channel.GroupType.OPEN.getValue().equals(channel.getType()) ? messageList : finalMessageList;
     }
 
     private void processUserDetails(SyncUserDetailsResponse userDetailsResponse) {

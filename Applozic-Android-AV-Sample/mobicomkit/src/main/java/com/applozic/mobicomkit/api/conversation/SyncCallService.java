@@ -77,11 +77,18 @@ public class SyncCallService {
     }
 
     public synchronized void syncMessages(String key) {
+        syncMessages(key, null);
+    }
+
+    public synchronized void syncMessages(String key, Message message) {
         if (!TextUtils.isEmpty(key) && mobiComMessageService.isMessagePresent(key)) {
             Utils.printLog(context, TAG, "Message is already present, MQTT reached before GCM.");
         } else {
             Intent intent = new Intent(context, ConversationIntentService.class);
             intent.putExtra(ConversationIntentService.SYNC, true);
+            if (message != null) {
+                intent.putExtra(ConversationIntentService.AL_MESSAGE, message);
+            }
             ConversationIntentService.enqueueWork(context, intent);
         }
     }

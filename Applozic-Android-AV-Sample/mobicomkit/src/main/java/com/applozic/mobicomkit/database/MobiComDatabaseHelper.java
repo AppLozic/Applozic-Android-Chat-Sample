@@ -15,6 +15,7 @@ public class MobiComDatabaseHelper extends SQLiteOpenHelper {
     public static final int DB_VERSION = 30;
 
     public static final String _ID = "_id";
+    public static final String DB_NAME = "APPLOZIC_LOCAL_DATABASE";
     public static final String SMS_KEY_STRING = "smsKeyString";
     public static final String STORE_ON_DEVICE_COLUMN = "storeOnDevice";
     public static final String TO_FIELD = "toField";
@@ -198,7 +199,7 @@ public class MobiComDatabaseHelper extends SQLiteOpenHelper {
             + USERID + " varchar(100), "
             + UNREAD_COUNT + " integer, "
             + STATUS + " integer, "
-            + ROLE +" integer default 0,"
+            + ROLE + " integer default 0,"
             + "UNIQUE (" + CHANNEL_KEY + ", " + USERID + "))";
 
     private static final String CREATE_CONVERSATION_TABLE = " CREATE TABLE conversation ( " +
@@ -217,7 +218,7 @@ public class MobiComDatabaseHelper extends SQLiteOpenHelper {
     private Context context;
 
     private MobiComDatabaseHelper(Context context) {
-        this(context, "MCK_" + MobiComKitClientService.getApplicationKey(context), null, DB_VERSION);
+        this(context, "MCK_" + DB_NAME, null, DB_VERSION);
         this.context = context;
     }
 

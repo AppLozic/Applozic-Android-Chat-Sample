@@ -168,7 +168,7 @@ public class Channel extends JsonMarker {
     public boolean isNotificationMuted() {
         Date date = Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTime();
         return (((getNotificationAfterTime() != null) && (getNotificationAfterTime() - date.getTime() > 0))
-                || ((getNotificationAfterTime() == 0 && isGroupDefaultMuted())));
+                || ((getNotificationAfterTime() != null && getNotificationAfterTime() == 0 && isGroupDefaultMuted())));
     }
 
     public boolean isDeleted() {

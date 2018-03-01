@@ -10,6 +10,7 @@ import com.applozic.mobicomkit.api.conversation.SyncCallService;
 import com.applozic.mobicomkit.api.conversation.database.MessageDatabaseService;
 import com.applozic.mobicomkit.api.notification.MobiComPushReceiver;
 import com.applozic.mobicomkit.broadcast.BroadcastService;
+import com.applozic.mobicomkit.channel.service.ChannelService;
 import com.applozic.mobicomkit.feed.InstantMessageResponse;
 import com.applozic.mobicomkit.feed.GcmMessageResponse;
 import com.applozic.mobicomkit.feed.MqttMessageResponse;
@@ -36,6 +37,7 @@ public class ApplozicMqttService extends MobiComKitClientService implements Mqtt
     private static final String STATUS = "status-v2";
     private static final String TAG = "ApplozicMqttService";
     private static final String TYPINGTOPIC = "typing-";
+    private static final String OPEN_GROUP = "group-";
     private static ApplozicMqttService applozicMqttService;
     private MqttClient client;
     private MemoryPersistence memoryPersistence;
@@ -214,7 +216,23 @@ public class ApplozicMqttService extends MobiComKitClientService implements Mqtt
                         public void run() {
                             Utils.printLog(context, TAG, "MQTT message type: " + mqttMessageResponse.getType());
                             if (NOTIFICATION_TYPE.MESSAGE_RECEIVED.getValue().equals(mqttMessageResponse.getType()) || "MESSAGE_RECEIVED".equals(mqttMessageResponse.getType())) {
-                                syncCallService.syncMessages(null);
+                                GcmMessageResponse messageResponse = (GcmMessageResponse) GsonUtils.getObjectFromJson(mqttMessage.toString(), GcmMessageResponse.class);
+                                if (messageResponse == null) {
+                                    return;
+                                }
+                                Message message = messageResponse.getMessage();
+                                if (message.getGroupId() != null) {
+                                    Channel channel = ChannelService.getInstance(context).getChannelByChannelKey(message.getGroupId());
+                                    if (channel != null && Channel.GroupType.OPEN.getValue().equals(channel.getType())) {
+                                        if(!MobiComUserPreference.getInstance(context).getDeviceKeyString().equals(message.getDeviceKeyString())){
+                                            syncCallService.syncMessages(message.getKeyString(), message);
+                                        }
+                                    } else {
+                                        syncCallService.syncMessages(null);
+                                    }
+                                } else {
+                                    syncCallService.syncMessages(null);
+                                }
                             }
 
                             if (NOTIFICATION_TYPE.MESSAGE_DELIVERED.getValue().equals(mqttMessageResponse.getType())
@@ -438,6 +456,43 @@ public class ApplozicMqttService extends MobiComKitClientService implements Mqtt
         }
         MobiComUserPreference mobiComUserPreference = MobiComUserPreference.getInstance(context);
         publishTopic(getApplicationKey(context), "0", mobiComUserPreference.getUserId(), currentId);
+    }
+
+    public synchronized void subscribeToOpenGroupTopic(Channel channel) {
+        try {
+            String currentId = null;
+            if (channel != null) {
+                currentId = String.valueOf(channel.getKey());
+            }
+            final MqttClient client = connect();
+            if (client == null || !client.isConnected()) {
+                return;
+            }
+
+            client.subscribe(OPEN_GROUP + getApplicationKey(context) + "-" + currentId, 0);
+            Utils.printLog(context,TAG, "Subscribed to Open group: " + OPEN_GROUP + getApplicationKey(context) + "-" + currentId);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public synchronized void unSubscribeToOpenGroupTopic(Channel channel) {
+        try {
+            String currentId = null;
+            if (channel != null) {
+                currentId = String.valueOf(channel.getKey());
+            }
+
+            final MqttClient client = connect();
+            if (client == null || !client.isConnected()) {
+                return;
+            }
+
+            client.unsubscribe(OPEN_GROUP + getApplicationKey(context) + "-" + currentId);
+            Utils.printLog(context,TAG, "UnSubscribed to topic: " + OPEN_GROUP+ getApplicationKey(context) + "-" + currentId);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public static enum NOTIFICATION_TYPE {
