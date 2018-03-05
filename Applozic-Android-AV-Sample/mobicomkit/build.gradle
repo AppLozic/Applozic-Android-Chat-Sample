@@ -8,7 +8,7 @@ android {
         minSdkVersion 14
         targetSdkVersion 27
         versionCode 1
-        versionName "5.6.6"
+        versionName "5.6.7"
     }
     useLibrary 'org.apache.http.legacy'
     buildTypes {
@@ -49,13 +49,14 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.8.0'
     api 'com.firebase:firebase-jobdispatcher:0.8.5'
     api project(':mobicommons') //Note: use this for customization
-    //implementation 'com.applozic.mobiframework:mobicommons:5.6.6' //Note: use this in case customization is not required
+    //implementation 'com.applozic.mobiframework:mobicommons:5.6.7' //Note: use this in case customization is not required
 }
 
 
 
+/*
 
-/*ext {
+ext {
     // Where you will see your artifact in Bintray's web interface
     // The "bintrayName" should match the name of the Bintray repro.
     bintrayRepo = 'maven'
@@ -69,7 +70,7 @@ dependencies {
     artifact = 'mobicomkit'
 
     libraryDescription = 'Applozic Communication Chat/Messaging library'
-    libraryVersion = '5.6.6'
+    libraryVersion = '5.6.7'
 
     developerId = 'devashish'
     developerName = 'Applozic'
@@ -78,5 +79,6 @@ dependencies {
 
 
 apply from: 'https://raw.githubusercontent.com/attwellBrian/JCenter/master/installv1.gradle'
-apply from: 'https://raw.githubusercontent.com/attwellBrian/JCenter/master/bintrayv1.gradle'*/
+apply from: 'https://raw.githubusercontent.com/attwellBrian/JCenter/master/bintrayv1.gradle'
+*/
 

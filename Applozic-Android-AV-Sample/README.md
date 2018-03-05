@@ -26,7 +26,7 @@ Documentation: [Applozic Android Chat & Messaging SDK Documentation](https://www
 **Step 1: Add the following in your build.gradle dependency**:  
 
 ```
-compile 'com.applozic.communication.uiwidget:audiovideo:1.9'
+compile 'com.applozic.communication.uiwidget:audiovideo:2.0'
 ```
 
 

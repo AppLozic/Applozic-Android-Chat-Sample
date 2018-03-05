@@ -218,7 +218,7 @@ public class MobiComDatabaseHelper extends SQLiteOpenHelper {
     private Context context;
 
     private MobiComDatabaseHelper(Context context) {
-        this(context, "MCK_" + DB_NAME, null, DB_VERSION);
+        this(context, "MCK_" + MobiComKitClientService.getApplicationKey(context), null, DB_VERSION);
         this.context = context;
     }
 
