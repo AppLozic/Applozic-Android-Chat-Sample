@@ -14,6 +14,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Build;
+import android.os.PowerManager;
 import android.os.StrictMode;
 import android.provider.ContactsContract;
 import android.text.SpannableStringBuilder;
@@ -136,6 +137,16 @@ public class Utils {
 
     public static boolean isBetweenGingerBreadAndKitKat() {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD && Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT;
+    }
+
+    public static boolean isDeviceInIdleState(Context context) {
+        if (hasMarshmallow()) {
+            PowerManager pm = context.getSystemService(PowerManager.class);
+            if (pm != null && pm.isDeviceIdleMode()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static boolean hasOreo() {
@@ -341,14 +352,14 @@ public class Utils {
     }
 
     public static void printLog(Context context, String tag, String message) {
-        try{
-            if(context != null) {
+        try {
+            if (context != null) {
                 boolean isDebuggable = (0 != (context.getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE));
                 if (isDebuggable) {
                     Log.i(tag, message);
                 }
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }

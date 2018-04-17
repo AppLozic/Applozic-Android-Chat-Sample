@@ -1,6 +1,7 @@
 package com.applozic.mobicomkit.uiwidgets.people.activity;
 
 import android.annotation.TargetApi;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
@@ -9,6 +10,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.ContactsContract;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
@@ -29,10 +31,14 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
+import com.applozic.mobicomkit.ApplozicClient;
 import com.applozic.mobicomkit.api.account.user.MobiComUserPreference;
 import com.applozic.mobicomkit.api.attachment.FileClientService;
+import com.applozic.mobicomkit.api.people.ChannelInfo;
 import com.applozic.mobicomkit.channel.service.ChannelService;
+import com.applozic.mobicomkit.contact.AppContactService;
 import com.applozic.mobicomkit.uiwidgets.AlCustomizationSettings;
+import com.applozic.mobicomkit.uiwidgets.ContactsChangeObserver;
 import com.applozic.mobicomkit.uiwidgets.R;
 import com.applozic.mobicomkit.uiwidgets.conversation.ConversationUIService;
 import com.applozic.mobicomkit.uiwidgets.conversation.activity.ConversationActivity;
@@ -82,6 +88,7 @@ public class MobiComKitPeopleActivity extends AppCompatActivity implements OnCon
     OnContactsInteractionListener onContactsInteractionListener;
     private SearchListFragment searchListFragment;
     private boolean isSearchResultView = false;
+    private ContactsChangeObserver observer;
 
     public static void addFragment(FragmentActivity fragmentActivity, Fragment fragmentToAdd, String fragmentTag) {
         FragmentManager supportFragmentManager = fragmentActivity.getSupportFragmentManager();
@@ -173,6 +180,11 @@ public class MobiComKitPeopleActivity extends AppCompatActivity implements OnCon
       /*  if (Intent.ACTION_SEARCH.equals(intent.getAction())) {
             mContactsListFragment.onQueryTextChange(searchQuery);
         }*/
+        if (ApplozicClient.getInstance(this).isDeviceContactSync()) {
+            observer = new ContactsChangeObserver(null, this);
+            getApplicationContext().getContentResolver().registerContentObserver(
+                    ContactsContract.Contacts.CONTENT_URI, true, observer);
+        }
     }
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
@@ -303,9 +315,14 @@ public class MobiComKitPeopleActivity extends AppCompatActivity implements OnCon
 
             }
         } else {
-            intent = new Intent();
-            intent.putExtra(USER_ID, contact.getUserId());
-            finishActivity(intent);
+
+            if (ApplozicClient.getInstance(this).isStartGroupOfTwo()) {
+                new ChannelCreateAsyncTask(MobiComUserPreference.getInstance(this).getParentGroupKey(), contact, MobiComKitPeopleActivity.this).execute((Void) null);
+            } else {
+                intent = new Intent();
+                intent.putExtra(USER_ID, contact.getUserId());
+                finishActivity(intent);
+            }
         }
     }
 
@@ -431,6 +448,9 @@ public class MobiComKitPeopleActivity extends AppCompatActivity implements OnCon
         if (onContactsInteractionListener != null) {
             onContactsInteractionListener = null;
         }
+        if (observer != null) {
+            getApplicationContext().getContentResolver().unregisterContentObserver(observer);
+        }
     }
 
     class ViewPagerAdapter extends FragmentStatePagerAdapter {
@@ -527,6 +547,75 @@ public class MobiComKitPeopleActivity extends AppCompatActivity implements OnCon
             }
         }
     }
+
+    public class ChannelCreateAsyncTask extends AsyncTask<Void, Integer, Channel> {
+        private ChannelService channelService;
+        private ProgressDialog progressDialog;
+        private Context context;
+        Channel channel;
+        String withUserId;
+        AppContactService appContactService;
+        String loggedInUserId;
+        Contact withUserContact;
+        Integer localParentGroupKey;
+
+        public ChannelCreateAsyncTask(Integer parentGroupKey, Contact withUserContact, Context context) {
+            this.context = context;
+            this.channelService = ChannelService.getInstance(context);
+            this.withUserContact = withUserContact;
+            this.localParentGroupKey = parentGroupKey;
+            this.appContactService = new AppContactService(context);
+            this.loggedInUserId = MobiComUserPreference.getInstance(context).getUserId();
+        }
+
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            progressDialog = ProgressDialog.show(context, "",
+                    context.getString(R.string.please_wait_creating_group_of_two), true);
+        }
+
+        @Override
+        protected Channel doInBackground(Void... params) {
+
+            if (localParentGroupKey != null && localParentGroupKey != 0 && withUserContact != null) {
+                List<String> userIdList = new ArrayList<>();
+                userIdList.add(withUserContact.getContactIds());
+                int result = loggedInUserId.compareTo(withUserContact.getContactIds());
+                StringBuffer stringBuffer = new StringBuffer();
+                if (result == 0) {
+                    stringBuffer.append(localParentGroupKey).append(":").append(loggedInUserId).append(":").append(withUserContact.getContactIds());
+                } else if (result < 0) {
+                    stringBuffer.append(localParentGroupKey).append(":").append(loggedInUserId).append(":").append(withUserContact.getContactIds());
+                } else {
+                    stringBuffer.append(localParentGroupKey).append(":").append(withUserContact.getContactIds()).append(":").append(loggedInUserId);
+                }
+                ChannelInfo channelInfo = new ChannelInfo(stringBuffer.toString(), userIdList);
+                channelInfo.setClientGroupId(stringBuffer.toString());
+                channelInfo.setType(Channel.GroupType.GROUPOFTWO.getValue());
+                channelInfo.setParentKey(localParentGroupKey);
+                channel = channelService.createGroupOfTwo(channelInfo);
+            }
+            return channel;
+        }
+
+        @Override
+        protected void onPostExecute(Channel channel) {
+            super.onPostExecute(channel);
+            if (progressDialog != null && progressDialog.isShowing()) {
+                progressDialog.dismiss();
+            }
+            if (channel != null) {
+                Intent intent = new Intent(context, ConversationActivity.class);
+                intent.putExtra(ConversationUIService.GROUP_ID, channel.getKey());
+                intent.putExtra(ConversationUIService.GROUP_NAME, channel.getName());
+                startActivity(intent);
+            }
+        }
+
+    }
+
 }
 
 

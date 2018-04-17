@@ -23,13 +23,12 @@ public class RegistrationResponse extends JsonMarker {
     private String statusMessage;
     private String encryptionKey;
     private boolean enableEncryption;
+    private Short roleType;
     private Short pricingPackage = PricingType.STARTER.getValue();
 
     public String getMessage() {
         return message;
     }
-
-    ;
 
     public void setMessage(String message) {
         this.message = message;
@@ -149,6 +148,14 @@ public class RegistrationResponse extends JsonMarker {
 
     public void setEnableEncryption(boolean enableEncryption) {
         this.enableEncryption = enableEncryption;
+    }
+
+    public Short getRoleType() {
+        return roleType;
+    }
+
+    public void setRoleType(Short roleType) {
+        this.roleType = roleType;
     }
 
     @Override

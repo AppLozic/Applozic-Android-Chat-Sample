@@ -15,6 +15,7 @@ import com.applozic.mobicomkit.api.attachment.FileClientService;
 import com.applozic.mobicomkit.api.attachment.FileMeta;
 import com.applozic.mobicomkit.api.conversation.Message;
 import com.applozic.mobicomkit.broadcast.BroadcastService;
+import com.applozic.mobicomkit.channel.service.ChannelService;
 import com.applozic.mobicomkit.database.MobiComDatabaseHelper;
 import com.applozic.mobicommons.commons.core.utils.DBUtils;
 import com.applozic.mobicommons.commons.core.utils.Utils;
@@ -896,12 +897,83 @@ public class MessageDatabaseService {
         return read;
     }
 
+    private List<Message> getLatestGroupMessages(Long createdAt, String searchText, Integer parentGroupKey) {
 
-    public List<Message> getMessages(Long createdAt) {
-        return getMessages(createdAt, null);
+        if (parentGroupKey != null && parentGroupKey != 0) {
+            List<String> channelKeysArray = ChannelService.getInstance(context).getChildGroupKeys(parentGroupKey);
+            if (channelKeysArray == null || channelKeysArray.size() < 1) {
+                return new ArrayList<>();
+            }
+            channelKeysArray.add(String.valueOf(parentGroupKey));
+            String createdAtClause = "";
+            String searchCaluse = "";
+            if (createdAt != null && createdAt > 0) {
+                createdAtClause = " and  m.createdAt < " + createdAt;
+            }
+
+            if (!TextUtils.isEmpty(searchText)) {
+                searchCaluse += " and (m.message like '%" + searchText.replaceAll("'", "''") + "%' "
+                        + " or c.channelName like '%" + searchText.replaceAll("'", "''") + "%' )";
+            }
+
+            createdAtClause += " and m.deleted = 0 ";
+
+            String messageTypeClause = "";
+            MobiComUserPreference userPreferences = MobiComUserPreference.getInstance(context);
+            if (!userPreferences.isDisplayCallRecordEnable()) {
+                messageTypeClause = " and m.type != " + Message.MessageType.CALL_INCOMING.getValue() + " and m.type != " + Message.MessageType.CALL_OUTGOING.getValue();
+            }
+
+            String hiddenType = " and m.messageContentType != " + Message.ContentType.HIDDEN.getValue() + " and m.hidden = 0 and  m.replyMessage != " + Message.ReplyMessage.HIDE_MESSAGE.getValue();
+
+            SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+            String[] toStringArray = new String[channelKeysArray.size()];
+            toStringArray = channelKeysArray.toArray(toStringArray);
+
+            String placeHolderString = Utils.makePlaceHolders(channelKeysArray.size());
+
+            String str = "select m1.* from sms m1, (SELECT  " +
+                    "        m.channelKey as channelKey1, MAX(createdAt) as createdAt1" +
+                    "    FROM" +
+                    "        sms m join channel c on m.channelKey IN (" + placeHolderString + ")" +
+                    "    WHERE 1=1 "
+                    + searchCaluse
+                    + messageTypeClause
+                    + hiddenType
+                    + createdAtClause
+                    + " GROUP BY m.channelKey) m2" + " Where  m1.createdAt = m2.createdAt1 " +
+                    "        AND m1.channelKey = m2.channelKey1 "
+                    + " order by m1.createdAt desc";
+
+
+            final Cursor cursor = db.rawQuery(str, channelKeysArray.toArray(toStringArray));
+            List<Message> messageList = getMessageList(cursor);
+
+            if (cursor != null && !cursor.isClosed()) {
+                cursor.close();
+            }
+            dbHelper.close();
+            return messageList;
+        }
+        return new ArrayList<>();
     }
 
-    public List<Message> getMessages(Long createdAt, String searchText) {
+
+    public List<Message> getMessages(Long createdAt) {
+        return getMessages(createdAt, null, null);
+    }
+
+    List<Message> getMessages(Long createdAt, String searchText) {
+        return getMessages(createdAt, searchText, null);
+    }
+
+
+    public List<Message> getMessages(Long createdAt, String searchText, Integer parentGroupKey) {
+
+        if (parentGroupKey != null && parentGroupKey != 0) {
+            return getLatestGroupMessages(createdAt, searchText, parentGroupKey);
+        } else {
         String createdAtClause = "";
         if (createdAt != null && createdAt > 0) {
             createdAtClause = " and m1.createdAt < " + createdAt;
@@ -938,6 +1010,7 @@ public class MessageDatabaseService {
 
         dbHelper.close();
         return messageList;
+        }
     }
 
     public String deleteMessage(Message message, String contactNumber) {

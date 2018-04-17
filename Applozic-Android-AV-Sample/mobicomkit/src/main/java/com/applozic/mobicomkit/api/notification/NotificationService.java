@@ -93,6 +93,12 @@ public class NotificationService {
                     Contact newContact = appContactService.getContactById(userId);
                     notificationIconBitmap = appContactService.downloadContactImage(context, newContact);
                 }
+            } else if (Channel.GroupType.SUPPORT_GROUP.getValue().equals(channel.getType())) {
+                String userId = message.getTo();
+                if (!TextUtils.isEmpty(userId)) {
+                    Contact newContact = appContactService.getContactById(userId);
+                    notificationIconBitmap = appContactService.downloadContactImage(context, newContact);
+                }
             } else {
                 notificationIconBitmap = appContactService.downloadGroupImage(context, channel);
             }
@@ -148,7 +154,7 @@ public class NotificationService {
 
         // Sets a title for the Inbox in expanded layout
 
-        inboxStyle.setBigContentTitle(getNotificationTitle(count, contact, channel));
+        inboxStyle.setBigContentTitle(getNotificationTitle(count, contact, channel, message));
 
         // Moves events into the expanded layout
         try {
@@ -188,7 +194,7 @@ public class NotificationService {
             mBuilder.setContentText(summaryText);
         }
         inboxStyle.setSummaryText(summaryText);
-        mBuilder.setContentTitle(getNotificationTitle(count, contact, channel));
+        mBuilder.setContentTitle(getNotificationTitle(count, contact, channel, message));
         mBuilder.setStyle(inboxStyle);
 
         // Issue the notification here.
@@ -231,12 +237,20 @@ public class NotificationService {
         }
     }
 
-    public CharSequence getNotificationTitle(int conversationCount, Contact contact, Channel channel) {
+    public CharSequence getNotificationTitle(int conversationCount, Contact contact, Channel channel, Message message) {
         if (conversationCount < 2) {
             String notificationTitle = null;
             if (channel != null) {
                 if (Channel.GroupType.GROUPOFTWO.getValue().equals(channel.getType())) {
                     String userId = ChannelService.getInstance(context).getGroupOfTwoReceiverUserId(channel.getKey());
+                    if (!TextUtils.isEmpty(userId)) {
+                        Contact receiverContact = appContactService.getContactById(userId);
+                        if (receiverContact != null) {
+                            notificationTitle = receiverContact.getDisplayName();
+                        }
+                    }
+                } else if (Channel.GroupType.SUPPORT_GROUP.getValue().equals(channel.getType())) {
+                    String userId = message.getTo();
                     if (!TextUtils.isEmpty(userId)) {
                         Contact receiverContact = appContactService.getContactById(userId);
                         if (receiverContact != null) {
@@ -272,7 +286,7 @@ public class NotificationService {
         CharSequence messageBody;
         Contact messageContactDisplayName = contact != null ? contact : appContactService.getContactById(message.getTo());
         if (message.getGroupId() != null) {
-            if (Channel.GroupType.GROUPOFTWO.getValue().equals(channel.getType())) {
+            if (Channel.GroupType.GROUPOFTWO.getValue().equals(channel.getType()) || Channel.GroupType.SUPPORT_GROUP.getValue().equals(channel.getType())) {
                 messageBody = Utils.getStyleStringForMessage(notificationText);
             } else {
                 messageBody = Utils.getStyledStringForChannel(messageContactDisplayName.getDisplayName(), channel.getName(), notificationText);
@@ -306,6 +320,13 @@ public class NotificationService {
                 if (!TextUtils.isEmpty(userId)) {
                     Contact newContact = appContactService.getContactById(userId);
                     notificationIconBitmap = appContactService.downloadContactImage(context, newContact);
+                    title = newContact.getDisplayName();
+                }
+            } else if (Channel.GroupType.SUPPORT_GROUP.getValue().equals(channel.getType())) {
+                String userId = message.getTo();
+                if (!TextUtils.isEmpty(userId)) {
+                    Contact newContact = appContactService.getContactById(userId);
+                    notificationIconBitmap = appContactService.downloadGroupImage(context, channel);
                     title = newContact.getDisplayName();
                 }
             } else {
@@ -355,12 +376,12 @@ public class NotificationService {
         NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(context, MobiComKitConstants.AL_PUSH_NOTIFICATION);
 
         mBuilder.setSmallIcon(smallIconResourceId)
-                .setLargeIcon(ApplozicClient.getInstance(context).isShowAppIconInNotification() ? BitmapFactory.decodeResource(context.getResources(), iconResourceId) : notificationIconBitmap != null ? notificationIconBitmap : BitmapFactory.decodeResource(context.getResources(), context.getResources().getIdentifier(channel != null && !Channel.GroupType.GROUPOFTWO.getValue().equals(channel.getType()) ? applozicClient.getDefaultChannelImage() : applozicClient.getDefaultContactImage(), "drawable", context.getPackageName())))
+                .setLargeIcon(ApplozicClient.getInstance(context).isShowAppIconInNotification() ? BitmapFactory.decodeResource(context.getResources(), iconResourceId) : notificationIconBitmap != null ? notificationIconBitmap : BitmapFactory.decodeResource(context.getResources(), context.getResources().getIdentifier(channel != null && !(Channel.GroupType.GROUPOFTWO.getValue().equals(channel.getType()) || Channel.GroupType.SUPPORT_GROUP.getValue().equals(channel.getType())) ? applozicClient.getDefaultChannelImage() : applozicClient.getDefaultContactImage(), "drawable", context.getPackageName())))
                 .setCategory(NotificationCompat.CATEGORY_MESSAGE)
                 .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setWhen(System.currentTimeMillis())
                 .setContentTitle(title)
-                .setContentText(channel != null && !Channel.GroupType.GROUPOFTWO.getValue().equals(channel.getType()) ? displayNameContact.getDisplayName() + ": " + notificationText : notificationText)
+                .setContentText(channel != null && !(Channel.GroupType.GROUPOFTWO.getValue().equals(channel.getType()) || Channel.GroupType.SUPPORT_GROUP.getValue().equals(channel.getType())) ? displayNameContact.getDisplayName() + ": " + notificationText : notificationText)
                 .setSound(TextUtils.isEmpty(MobiComUserPreference.getInstance(context).getNotificationSoundFilePath()) ? RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION) : Uri.parse(MobiComUserPreference.getInstance(context).getNotificationSoundFilePath()));
         mBuilder.setContentIntent(pendingIntent);
         mBuilder.setAutoCancel(true);

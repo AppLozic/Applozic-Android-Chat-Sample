@@ -15,7 +15,7 @@ repositories {
 }
 android {
     compileSdkVersion 27
-    buildToolsVersion '27.0.2'
+    buildToolsVersion '27.0.3'
 
     defaultConfig {
         applicationId "com.mobicomkit.sample"
@@ -58,10 +58,10 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
    api project(':audiovideo')//should be enabled only for ui modifications
-    //implementation 'com.applozic.communication.uiwidget:audiovideo:2.0'
-    implementation 'com.android.support:support-v4:27.1.0'
-    implementation 'com.android.support:appcompat-v7:27.1.0'
-    implementation 'com.android.support:design:27.1.0'
+   // implementation 'com.applozic.communication.uiwidget:audiovideo:2.1.1'
+    implementation 'com.android.support:support-v4:27.1.1'
+    implementation 'com.android.support:appcompat-v7:27.1.1'
+    implementation 'com.android.support:design:27.1.1'
     implementation 'com.android.support:multidex:1.0.1'
     compile('com.crashlytics.sdk.android:crashlytics:2.5.7@aar') {
         transitive = true;

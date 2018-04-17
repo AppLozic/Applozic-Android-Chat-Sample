@@ -9,10 +9,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:paddingBottom="6dp"
-        android:paddingLeft="@dimen/listview_item_padding"
-        android:paddingStart="@dimen/listview_item_padding"
-        android:paddingRight="0dp"
         android:paddingEnd="0dp"
+        android:paddingLeft="@dimen/listview_item_padding"
+        android:paddingRight="0dp"
+        android:paddingStart="@dimen/listview_item_padding"
         android:paddingTop="8dp">
 
         <TextView
@@ -33,10 +33,10 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:layout_gravity="center"
+            android:layout_toEndOf="@+id/contactIcon"
             android:layout_toRightOf="@+id/contactIcon"
             android:src="@drawable/applozic_ic_contact_picture_holo_light"
-            android:visibility="visible"
-            android:layout_toEndOf="@+id/contactIcon" />
+            android:visibility="visible" />
 
     </RelativeLayout>
 
@@ -45,16 +45,16 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
         android:layout_alignParentRight="true"
-        android:layout_marginRight="5dp"
-        android:layout_toRightOf="@+id/profile_image_relative_layout"
-        android:paddingLeft="@dimen/listview_item_padding"
-        android:paddingStart="@dimen/listview_item_padding"
-        android:paddingRight="@dimen/listview_item_padding"
-        android:paddingEnd="@dimen/listview_item_padding"
         android:layout_marginEnd="5dp"
+        android:layout_marginRight="5dp"
         android:layout_toEndOf="@+id/profile_image_relative_layout"
-        android:layout_alignParentEnd="true">
+        android:layout_toRightOf="@+id/profile_image_relative_layout"
+        android:paddingEnd="@dimen/listview_item_padding"
+        android:paddingLeft="@dimen/listview_item_padding"
+        android:paddingRight="@dimen/listview_item_padding"
+        android:paddingStart="@dimen/listview_item_padding">
 
         <TextView
             android:id="@+id/contactNumberTextView"
@@ -67,7 +67,7 @@
             android:text=""
             android:textColor="@color/message_details_text_color"
             android:textSize="14sp"
-            android:visibility="gone" />
+            android:visibility="visible" />
 
     </RelativeLayout>
 
@@ -77,28 +77,30 @@
     <!-- Use standard android.R class text2 id instead of app specific id. This is just useful for
          consistency. This is secondary text and not always visible so by default is has its
          visibility set to gone -->
+
     <TextView
         android:id="@+id/text2"
         android:layout_width="match_parent"
         android:layout_height="26dp"
-        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
         android:layout_alignParentRight="true"
+        android:layout_toEndOf="@+id/profile_image_relative_layout"
         android:layout_toRightOf="@+id/profile_image_relative_layout"
+        android:layout_toLeftOf="@+id/applozic_contact_text_relative_layout"
+        android:layout_toStartOf="@+id/applozic_contact_text_relative_layout"
         android:ellipsize="marquee"
         android:fontFamily="sans-serif"
-        android:paddingLeft="@dimen/listview_item_padding"
-        android:paddingStart="@dimen/listview_item_padding"
-        android:paddingRight="@dimen/listview_item_padding"
         android:paddingEnd="@dimen/listview_item_padding"
+        android:paddingLeft="@dimen/listview_item_padding"
+        android:paddingRight="@dimen/listview_item_padding"
+        android:paddingStart="@dimen/listview_item_padding"
         android:singleLine="true"
         android:text="@string/search_match_other"
+        android:textAlignment="gravity"
         android:textColor="@color/message_text_color"
-        android:textSize="14dp"
-        android:visibility="gone"
-        android:layout_alignParentEnd="true"
-        android:layout_toEndOf="@+id/profile_image_relative_layout"
         android:textDirection="locale"
-        android:textAlignment="gravity" />
+        android:textSize="14dp"
+        android:visibility="visible" />
 
     <!-- Use standard android.R class text1 id instead of app specific id. This is just useful for
          consistency. This view also sets layout_alignWithParentIfMissing=true which lets the view
@@ -110,19 +112,64 @@
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_alignWithParentIfMissing="true"
-        android:layout_marginRight="30dp"
         android:layout_marginEnd="30dp"
+        android:layout_marginRight="30dp"
         android:layout_marginTop="5dp"
+        android:layout_toEndOf="@id/profile_image_relative_layout"
         android:layout_toRightOf="@id/profile_image_relative_layout"
         android:ellipsize="end"
         android:gravity="center_vertical"
         android:paddingLeft="@dimen/listview_item_padding"
         android:paddingStart="@dimen/listview_item_padding"
         android:singleLine="true"
-        android:textDirection="locale"
         android:textColor="@color/message_details_text_color"
-        android:textSize="18sp"
-        android:layout_toEndOf="@id/profile_image_relative_layout" />
+        android:textDirection="locale"
+        android:textSize="18sp" />
 
 
+    <RelativeLayout
+        android:id="@+id/applozic_contact_text_relative_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent">
+
+        <TextView
+            android:id="@+id/unblock"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="8dp"
+            android:layout_marginRight="8dp"
+            android:background="@drawable/rounded_square_unblock"
+            android:gravity="center_vertical"
+            android:paddingBottom="10dp"
+            android:paddingTop="10dp"
+            android:text="Unblock"
+            android:textAlignment="gravity"
+            android:textColor="@color/alphabet_g"
+            android:textDirection="locale"
+            android:textSize="12sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/invite"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="8dp"
+            android:layout_marginRight="8dp"
+            android:background="@drawable/rounded_square_invite"
+            android:gravity="center_vertical"
+            android:paddingBottom="10dp"
+            android:paddingTop="10dp"
+            android:text="Invite"
+            android:textAlignment="gravity"
+            android:textColor="@color/alphabet_k"
+            android:textDirection="locale"
+            android:textSize="12sp"
+            android:visibility="visible" />
+    </RelativeLayout>
 </RelativeLayout>

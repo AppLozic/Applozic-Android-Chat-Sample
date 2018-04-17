@@ -17,11 +17,13 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v4.widget.NestedScrollView;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.ContextMenu;
 import android.view.Gravity;
@@ -35,6 +37,7 @@ import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -111,6 +114,7 @@ public class ChannelInfoActivity extends AppCompatActivity {
     private RelativeLayout channelDeleteRelativeLayout, channelExitRelativeLayout;
     private Integer channelKey;
     private RefreshBroadcast refreshBroadcast;
+    private NestedScrollView nestedScrollView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -135,6 +139,8 @@ public class ChannelInfoActivity extends AppCompatActivity {
         channelDeleteRelativeLayout = (RelativeLayout) findViewById(R.id.channel_delete_relativeLayout);
         channelExitRelativeLayout = (RelativeLayout) findViewById(R.id.channel_exit_relativeLayout);
         collapsingToolbarLayout = (CollapsingToolbarLayout) findViewById(R.id.toolbar_layout);
+        nestedScrollView = findViewById(R.id.nestedScrollView);
+
         collapsingToolbarLayout.setContentScrimColor(Color.parseColor(alCustomizationSettings.getCollapsingToolbarLayoutColor()));
         groupParticipantsTexView.setTextColor(Color.parseColor(alCustomizationSettings.getGroupParticipantsTextColor()));
         deleteChannelButton.setBackgroundColor(Color.parseColor((alCustomizationSettings.getGroupDeleteButtonBackgroundColor())));
@@ -150,6 +156,12 @@ public class ChannelInfoActivity extends AppCompatActivity {
         if (Utils.hasLollipop()) {
             mainListView.setNestedScrollingEnabled(true);
         }
+        nestedScrollView.post(new Runnable() {
+            @Override
+            public void run() {
+                nestedScrollView.scrollTo(nestedScrollView.getLeft(), groupParticipantsTexView.getTop());
+            }
+        });
         connectivityReceiver = new ConnectivityReceiver();
         mobiComKitBroadcastReceiver = new MobiComKitBroadcastReceiver(this);
 
@@ -220,6 +232,7 @@ public class ChannelInfoActivity extends AppCompatActivity {
 
         contactsAdapter = new ContactsAdapter(this);
         mainListView.setAdapter(contactsAdapter);
+        Helper.getListViewSize(mainListView);
 
         mainListView.setOnScrollListener(new AbsListView.OnScrollListener() {
             @Override
@@ -497,6 +510,7 @@ public class ChannelInfoActivity extends AppCompatActivity {
             channelUserMapperList.clear();
             channelUserMapperList = ChannelService.getInstance(this).getListOfUsersFromChannelUserMapper(channel.getKey());
             contactsAdapter.notifyDataSetChanged();
+            Helper.getListViewSize(mainListView);
             String oldChannelName = channel.getName();
             channel = ChannelService.getInstance(this).getChannelByChannelKey(channel.getKey());
             if (!oldChannelName.equals(channel.getName())) {
@@ -718,6 +732,27 @@ public class ChannelInfoActivity extends AppCompatActivity {
 
     }
 
+
+    public static class Helper {
+        public static void getListViewSize(ListView myListView) {
+            ListAdapter myListAdapter = myListView.getAdapter();
+            if (myListAdapter == null) {
+                //do nothing return null
+                return;
+            }
+            int totalHeight = 0;
+            if (myListAdapter.getCount() > 0) {
+                View listItem = myListAdapter.getView(0, null, myListView);
+                listItem.measure(0, 0);
+                totalHeight = listItem.getMeasuredHeight() * myListAdapter.getCount();
+
+                ViewGroup.LayoutParams params = myListView.getLayoutParams();
+                params.height = totalHeight + (myListView.getDividerHeight() * (myListAdapter.getCount() - 1));
+                myListView.setLayoutParams(params);
+            }
+        }
+    }
+
     public class ChannelMember extends AsyncTask<Void, Integer, Long> {
         String responseForRemove;
         private ChannelUserMapper channelUserMapper;
@@ -766,6 +801,7 @@ public class ChannelInfoActivity extends AppCompatActivity {
                 if (channelUserMapperList != null && channelUserMapperList.size() > 0) {
                     channelUserMapperList.remove(channelUserMapper);
                     contactsAdapter.notifyDataSetChanged();
+                    Helper.getListViewSize(mainListView);
                 }
             }
         }
@@ -843,6 +879,7 @@ public class ChannelInfoActivity extends AppCompatActivity {
                     ChannelUserMapper channelUserMapper = new ChannelUserMapper(channel.getKey(), userId);
                     channelUserMapperList.add(channelUserMapper);
                     contactsAdapter.notifyDataSetChanged();
+                    Helper.getListViewSize(mainListView);
                 } else {
                     List<ErrorResponseFeed> error = apiResponse.getErrorResponse();
                     if (error != null && error.size() > 0) {
@@ -859,15 +896,30 @@ public class ChannelInfoActivity extends AppCompatActivity {
                 }
             }
             if (!TextUtils.isEmpty(responseForDeleteGroup) && SUCCESS.equals(responseForDeleteGroup)) {
-                Intent intent = new Intent(ChannelInfoActivity.this, ConversationActivity.class);
-                if (ApplozicClient.getInstance(ChannelInfoActivity.this).isContextBasedChat()) {
-                    intent.putExtra(ConversationUIService.CONTEXT_BASED_CHAT, true);
+                try {
+                    if (!TextUtils.isEmpty(alCustomizationSettings.getGroupDeletePackageName())) {
+                        Class HomeActivity = Class.forName(alCustomizationSettings.getGroupDeletePackageName().trim());
+                        if (HomeActivity != null) {
+                            userPreference.setDeleteChannel(true);
+                            Intent intent = new Intent(ChannelInfoActivity.this, HomeActivity);
+                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                            intent.putExtra(ConversationUIService.FROM_GROUP_DELETE, true);
+                            startActivity(intent);
+                            finish();
+                        }
+                    } else {
+                        Intent intent = new Intent(ChannelInfoActivity.this, ConversationActivity.class);
+                        if (ApplozicClient.getInstance(ChannelInfoActivity.this).isContextBasedChat()) {
+                            intent.putExtra(ConversationUIService.CONTEXT_BASED_CHAT, true);
+                        }
+                        startActivity(intent);
+                        userPreference.setDeleteChannel(true);
+                        finish();
+                    }
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
                 }
-                startActivity(intent);
-                userPreference.setDeleteChannel(true);
-                finish();
             }
-
         }
     }
 
@@ -979,8 +1031,8 @@ public class ChannelInfoActivity extends AppCompatActivity {
         }
     }
 
-    static IntentFilter getIntentFilter(){
-        IntentFilter intentFilter =  new IntentFilter();
+    static IntentFilter getIntentFilter() {
+        IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(BroadcastService.INTENT_ACTIONS.UPDATE_GROUP_INFO.toString());
         intentFilter.addAction(BroadcastService.INTENT_ACTIONS.UPDATE_USER_DETAIL.toString());
         return intentFilter;
@@ -1037,6 +1089,7 @@ public class ChannelInfoActivity extends AppCompatActivity {
                         channelUserMapperList.remove(channelUserMapper);
                         channelUserMapperList.add(index, channelUserMapper);
                         contactsAdapter.notifyDataSetChanged();
+                        Helper.getListViewSize(mainListView);
                     } catch (Exception e) {
 
                     }

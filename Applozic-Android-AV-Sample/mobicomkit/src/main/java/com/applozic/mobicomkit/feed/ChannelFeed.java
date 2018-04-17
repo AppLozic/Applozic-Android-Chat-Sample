@@ -8,6 +8,7 @@ import com.applozic.mobicommons.people.channel.Channel;
 import com.applozic.mobicommons.people.channel.Conversation;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -19,6 +20,8 @@ public class ChannelFeed extends JsonMarker {
 
     private Integer id;
     private String clientGroupId;
+    private Integer parentKey;
+    private String parentClientGroupId;
     private String name;
     private String adminName;
     private String adminId;
@@ -26,10 +29,12 @@ public class ChannelFeed extends JsonMarker {
     private int userCount;
     private String imageUrl;
     private short type;
+    private int subGroupCount;
     private Set<String> membersName;
     private Set<String> membersId;
     private Set<UserDetail> users;
     private Conversation conversationPxy;
+    private Set<Integer> childKeys = new HashSet<>();
     private List<ChannelUsersFeed> groupUsers;
     private Long notificationAfterTime;
     private Long deletedAtTime;
@@ -190,11 +195,47 @@ public class ChannelFeed extends JsonMarker {
         this.metadata = metadata;
     }
 
+
+    public Integer getParentKey() {
+        return parentKey;
+    }
+
+    public void setParentKey(Integer parentKey) {
+        this.parentKey = parentKey;
+    }
+
+    public Set<Integer> getChildKeys() {
+        return childKeys;
+    }
+
+    public void setChildKeys(Set<Integer> childKeys) {
+        this.childKeys = childKeys;
+    }
+
+    public int getSubGroupCount() {
+        return subGroupCount;
+    }
+
+    public void setSubGroupCount(int subGroupCount) {
+        this.subGroupCount = subGroupCount;
+    }
+
+
+    public String getParentClientGroupId() {
+        return parentClientGroupId;
+    }
+
+    public void setParentClientGroupId(String parentClientGroupId) {
+        this.parentClientGroupId = parentClientGroupId;
+    }
+
     @Override
     public String toString() {
         return "ChannelFeed{" +
                 "id=" + id +
                 ", clientGroupId='" + clientGroupId + '\'' +
+                ", parentKey=" + parentKey +
+                ", parentClientGroupId='" + parentClientGroupId + '\'' +
                 ", name='" + name + '\'' +
                 ", adminName='" + adminName + '\'' +
                 ", adminId='" + adminId + '\'' +
@@ -202,12 +243,16 @@ public class ChannelFeed extends JsonMarker {
                 ", userCount=" + userCount +
                 ", imageUrl='" + imageUrl + '\'' +
                 ", type=" + type +
+                ", subGroupCount=" + subGroupCount +
                 ", membersName=" + membersName +
                 ", membersId=" + membersId +
                 ", users=" + users +
                 ", conversationPxy=" + conversationPxy +
+                ", childKeys=" + childKeys +
+                ", groupUsers=" + groupUsers +
                 ", notificationAfterTime=" + notificationAfterTime +
                 ", deletedAtTime=" + deletedAtTime +
+                ", metadata=" + metadata +
                 '}';
     }
 }

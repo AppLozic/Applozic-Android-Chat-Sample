@@ -74,6 +74,8 @@ public class ConversationUIService {
     public static final String CONVERSATION_FRAGMENT = "ConversationFragment";
     public static final String MESSGAE_INFO_FRAGMENT = "messageInfoFagment";
     public static final String USER_PROFILE_FRAMENT = "userProfilefragment";
+    public static final String PARENT_CLIENT_GROUP_ID = "parentClientGroupId";
+    public static final String PARENT_GROUP_KEY = "parentGroupKey";
     public static final String QUICK_CONVERSATION_FRAGMENT = "QuickConversationFragment";
     public static final String FORWARD_MESSAGE = "forwardMessage";
     public static final String CLIENT_GROUP_ID = "clientGroupId";
@@ -87,6 +89,7 @@ public class ConversationUIService {
     public static final String FIRST_TIME_MTEXTER_FRIEND = "firstTimeMTexterFriend";
     public static final String CONTACT_ID = "contactId";
     public static final String CONTEXT_BASED_CHAT = "contextBasedChat";
+    public static final String FROM_GROUP_DELETE = "fromGroupDelete";
     public static final String CONTACT_NUMBER = "contactNumber";
     public static final String APPLICATION_ID = "applicationId";
     public static final String DEFAULT_TEXT = "defaultText";
@@ -840,6 +843,10 @@ public class ConversationUIService {
             Message message = (Message) GsonUtils.getObjectFromJson(messageJson, Message.class);
             if (message.getGroupId() != null) {
                 channel = ChannelService.getInstance(fragmentActivity).getChannelByChannelKey(message.getGroupId());
+                if (channel.getParentKey() != null && channel.getParentKey() != 0) {
+                    BroadcastService.parentGroupKey =  channel.getParentKey();
+                    MobiComUserPreference.getInstance(fragmentActivity).setParentGroupKey(channel.getParentKey());
+                }
             } else {
                 contact = baseContactService.getContactById(message.getContactIds());
             }

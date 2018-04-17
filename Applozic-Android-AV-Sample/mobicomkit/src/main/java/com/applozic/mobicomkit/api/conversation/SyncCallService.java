@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.text.TextUtils;
 
+import com.applozic.mobicomkit.ConversationRunnables;
 import com.applozic.mobicomkit.api.account.register.RegisterUserClientService;
 import com.applozic.mobicomkit.api.account.user.UserService;
 import com.applozic.mobicomkit.api.conversation.database.MessageDatabaseService;
@@ -13,6 +14,7 @@ import com.applozic.mobicomkit.contact.AppContactService;
 import com.applozic.mobicomkit.contact.BaseContactService;
 import com.applozic.mobicomkit.contact.database.ContactDatabase;
 import com.applozic.mobicommons.commons.core.utils.Utils;
+import com.applozic.mobicommons.people.contact.Contact;
 
 import java.util.Calendar;
 import java.util.Date;
@@ -76,6 +78,14 @@ public class SyncCallService {
         return mobiComConversationService.getLatestMessagesGroupByPeople(createdAt, searchString);
     }
 
+    public synchronized List<Message> getLatestMessagesGroupByPeople(String searchString,Integer parentGroupKey) {
+        return mobiComConversationService.getLatestMessagesGroupByPeople(null,searchString,parentGroupKey);
+    }
+
+    public synchronized List<Message> getLatestMessagesGroupByPeople(Long createdAt,String searchString,Integer parentGroupKey) {
+        return mobiComConversationService.getLatestMessagesGroupByPeople(createdAt,searchString,parentGroupKey);
+    }
+
     public synchronized void syncMessages(String key) {
         syncMessages(key, null);
     }
@@ -84,21 +94,29 @@ public class SyncCallService {
         if (!TextUtils.isEmpty(key) && mobiComMessageService.isMessagePresent(key)) {
             Utils.printLog(context, TAG, "Message is already present, MQTT reached before GCM.");
         } else {
-            Intent intent = new Intent(context, ConversationIntentService.class);
-            intent.putExtra(ConversationIntentService.SYNC, true);
-            if (message != null) {
-                intent.putExtra(ConversationIntentService.AL_MESSAGE, message);
+            if (Utils.isDeviceInIdleState(context)) {
+                new ConversationRunnables(context, message, false, true, false);
+            } else {
+                Intent intent = new Intent(context, ConversationIntentService.class);
+                intent.putExtra(ConversationIntentService.SYNC, true);
+                if (message != null) {
+                    intent.putExtra(ConversationIntentService.AL_MESSAGE, message);
+                }
+                ConversationIntentService.enqueueWork(context, intent);
             }
-            ConversationIntentService.enqueueWork(context, intent);
         }
     }
 
     public synchronized void syncMessageMetadataUpdate(String key, boolean isFromFcm) {
         if (!TextUtils.isEmpty(key) && mobiComMessageService.isMessagePresent(key)) {
-            Utils.printLog(context, TAG, "Syncing updated message metadata from " + (isFromFcm ? "FCM" : "MQTT") + " for message key : " + key);
-            Intent intent = new Intent(context, ConversationIntentService.class);
-            intent.putExtra(ConversationIntentService.MESSAGE_METADATA_UPDATE, true);
-            ConversationIntentService.enqueueWork(context, intent);
+            if (Utils.isDeviceInIdleState(context)) {
+                new ConversationRunnables(context, null, false, false, true);
+            } else {
+                Utils.printLog(context, TAG, "Syncing updated message metadata from " + (isFromFcm ? "FCM" : "MQTT") + " for message key : " + key);
+                Intent intent = new Intent(context, ConversationIntentService.class);
+                intent.putExtra(ConversationIntentService.MESSAGE_METADATA_UPDATE, true);
+                ConversationIntentService.enqueueWork(context, intent);
+            }
         }
     }
 
@@ -178,6 +196,25 @@ public class SyncCallService {
 
     public void syncUserDetail(String userId) {
         messageClientService.processUserStatus(userId, true);
+    }
+
+    public void processContactSync(final String userId) {
+        Utils.printLog(context, TAG, "process contact sync for userId: " + userId);
+        if (!TextUtils.isEmpty(userId) && contactService.isContactPresent(userId)) {
+            Contact contact = contactService.getContactById(userId);
+
+
+            if (contact.isApplozicType()) {
+                Utils.printLog(context, TAG, "Contact is already present, MQTT reached before GCM.");
+                return;
+            }
+        }
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                UserService.getInstance(context).processContactSync();
+            }
+        }).start();
     }
 
 }

@@ -19,7 +19,10 @@ public class Channel extends JsonMarker {
 
     private Map<String, String> metadata = new HashMap<>();
     private Integer key;
+    private Integer parentKey;
+    private String parentClientGroupId;
     private String clientGroupId;
+    private int subGroupCount;
     private String name;
     private String adminKey;
     private Short type;
@@ -188,20 +191,28 @@ public class Channel extends JsonMarker {
                 && getMetadata().get(ChannelMetadata.MUTE).equalsIgnoreCase("true"));
     }
 
-    @Override
-    public String toString() {
-        return "Channel{" +
-                "key=" + key +
-                ", name='" + name + '\'' +
-                ", adminKey='" + adminKey + '\'' +
-                ", type=" + type +
-                ", unreadCount=" + unreadCount +
-                ", userCount=" + userCount +
-                ", imageUrl='" + imageUrl + '\'' +
-                ", localImageUri='" + localImageUri + '\'' +
-                ", conversationPxy=" + conversationPxy +
-                ", contacts=" + contacts +
-                '}';
+    public Integer getParentKey() {
+        return parentKey;
+    }
+
+    public void setParentKey(Integer parentKey) {
+        this.parentKey = parentKey;
+    }
+
+    public String getParentClientGroupId() {
+        return parentClientGroupId;
+    }
+
+    public void setParentClientGroupId(String parentClientGroupId) {
+        this.parentClientGroupId = parentClientGroupId;
+    }
+
+    public int getSubGroupCount() {
+        return subGroupCount;
+    }
+
+    public void setSubGroupCount(int subGroupCount) {
+        this.subGroupCount = subGroupCount;
     }
 
     public enum GroupType {
@@ -215,6 +226,7 @@ public class Channel extends JsonMarker {
         OPEN(6),
         GROUPOFTWO(7),
         CONTACT_GROUP(9),
+        SUPPORT_GROUP(10),
         BROADCAST_ONE_BY_ONE(106);
 
         private Integer value;
@@ -226,5 +238,28 @@ public class Channel extends JsonMarker {
         public Short getValue() {
             return value.shortValue();
         }
+    }
+
+    @Override
+    public String toString() {
+        return "Channel{" +
+                "metadata=" + metadata +
+                ", key=" + key +
+                ", parentKey=" + parentKey +
+                ", parentClientGroupId='" + parentClientGroupId + '\'' +
+                ", clientGroupId='" + clientGroupId + '\'' +
+                ", subGroupCount=" + subGroupCount +
+                ", name='" + name + '\'' +
+                ", adminKey='" + adminKey + '\'' +
+                ", type=" + type +
+                ", unreadCount=" + unreadCount +
+                ", userCount=" + userCount +
+                ", imageUrl='" + imageUrl + '\'' +
+                ", localImageUri='" + localImageUri + '\'' +
+                ", conversationPxy=" + conversationPxy +
+                ", contacts=" + contacts +
+                ", notificationAfterTime=" + notificationAfterTime +
+                ", deletedAtTime=" + deletedAtTime +
+                '}';
     }
 }

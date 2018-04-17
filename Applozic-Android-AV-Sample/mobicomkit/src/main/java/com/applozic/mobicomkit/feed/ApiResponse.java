@@ -7,12 +7,12 @@ import java.util.List;
 /**
  * Created by sunil on 23/12/15.
  */
-public class ApiResponse extends JsonMarker {
+public class ApiResponse<T> extends JsonMarker {
 
     private static final String SUCCESS = "success";
     private String status;
-    private String generatedAt;
-    private Object response;
+    private Long generatedAt;
+    private T response;
     private List<ErrorResponseFeed> errorResponse;
 
 
@@ -24,19 +24,19 @@ public class ApiResponse extends JsonMarker {
         this.status = status;
     }
 
-    public String getGeneratedAt() {
+    public Long getGeneratedAt() {
         return generatedAt;
     }
 
-    public void setGeneratedAt(String generatedAt) {
+    public void setGeneratedAt(Long generatedAt) {
         this.generatedAt = generatedAt;
     }
 
-    public Object getResponse() {
+    public T getResponse() {
         return response;
     }
 
-    public void setResponse(Object response) {
+    public void setResponse(T response) {
         this.response = response;
     }
 

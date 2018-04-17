@@ -3,8 +3,10 @@ package com.applozic.mobicomkit.api.account.user;
 import android.content.Context;
 import android.text.TextUtils;
 
+import com.applozic.mobicomkit.ApplozicClient;
 import com.applozic.mobicomkit.api.MobiComKitClientService;
 import com.applozic.mobicomkit.api.MobiComKitConstants;
+import com.applozic.mobicomkit.api.account.register.SyncClientService;
 import com.applozic.mobicomkit.api.notification.MuteUserResponse;
 import com.applozic.mobicomkit.broadcast.BroadcastService;
 import com.applozic.mobicomkit.contact.AppContactService;
@@ -12,7 +14,9 @@ import com.applozic.mobicomkit.contact.BaseContactService;
 import com.applozic.mobicomkit.contact.database.ContactDatabase;
 import com.applozic.mobicomkit.feed.ApiResponse;
 import com.applozic.mobicomkit.feed.RegisteredUsersApiResponse;
+import com.applozic.mobicomkit.feed.SyncApiResponse;
 import com.applozic.mobicomkit.feed.SyncBlockUserApiResponse;
+import com.applozic.mobicomkit.feed.SyncPxy;
 import com.applozic.mobicomkit.sync.SyncUserBlockFeed;
 import com.applozic.mobicomkit.sync.SyncUserBlockListFeed;
 import com.applozic.mobicommons.commons.core.utils.Utils;
@@ -31,18 +35,20 @@ import java.util.Set;
  */
 public class UserService {
 
+    private static final String TAG = "UserService";
     private static UserService userService;
     Context context;
     UserClientService userClientService;
     BaseContactService baseContactService;
     private MobiComUserPreference userPreference;
+    SyncClientService syncClientService;
 
     private UserService(Context context) {
         this.context = context;
         userClientService = new UserClientService(context);
         userPreference = MobiComUserPreference.getInstance(context);
         baseContactService = new AppContactService(context);
-
+        this.syncClientService = new SyncClientService(context);
     }
 
     public static UserService getInstance(Context context) {
@@ -68,6 +74,9 @@ public class UserService {
                                     baseContactService.updateUserBlocked(syncUserBlockedFeed.getBlockedTo(), syncUserBlockedFeed.getUserBlocked());
                                 } else {
                                     contact.setBlocked(syncUserBlockedFeed.getUserBlocked());
+                                    if (ApplozicClient.getInstance(context).isDeviceContactSync()) {
+                                        contact.setDeviceContactType(Contact.ContactType.APPLOZIC.getValue());
+                                    }
                                     contact.setUserId(syncUserBlockedFeed.getBlockedTo());
                                     baseContactService.upsert(contact);
                                     baseContactService.updateUserBlocked(syncUserBlockedFeed.getBlockedTo(), syncUserBlockedFeed.getUserBlocked());
@@ -83,6 +92,9 @@ public class UserService {
                                     baseContactService.updateUserBlockedBy(syncUserBlockByFeed.getBlockedBy(), syncUserBlockByFeed.getUserBlocked());
                                 } else {
                                     contact.setBlockedBy(syncUserBlockByFeed.getUserBlocked());
+                                    if (ApplozicClient.getInstance(context).isDeviceContactSync()) {
+                                        contact.setDeviceContactType(Contact.ContactType.APPLOZIC.getValue());
+                                    }
                                     contact.setUserId(syncUserBlockByFeed.getBlockedBy());
                                     baseContactService.upsert(contact);
                                     baseContactService.updateUserBlockedBy(syncUserBlockByFeed.getBlockedBy(), syncUserBlockByFeed.getUserBlocked());
@@ -116,6 +128,10 @@ public class UserService {
         }
     }
 
+    public synchronized void processUserDetailsByContactNos(Set<String> contactNumbers) {
+        userClientService.postUserDetailsByContactNos(contactNumbers);
+    }
+
     public synchronized void processUserDetails(String userId) {
         Set<String> userIds = new HashSet<String>();
         userIds.add(userId);
@@ -132,8 +148,12 @@ public class UserService {
         }
     }
 
-
     public synchronized void processUser(UserDetail userDetail) {
+        processUser(userDetail, Contact.ContactType.APPLOZIC);
+    }
+
+
+    public synchronized void processUser(UserDetail userDetail, Contact.ContactType contactType) {
         Contact contact = new Contact();
         contact.setUserId(userDetail.getUserId());
         contact.setContactNumber(userDetail.getPhoneNumber());
@@ -148,6 +168,11 @@ public class UserService {
         contact.setRoleType(userDetail.getRoleType());
         if (!TextUtils.isEmpty(userDetail.getImageLink())) {
             contact.setImageURL(userDetail.getImageLink());
+        }
+        if (ApplozicClient.getInstance(context).isDeviceContactSync()) {
+            contact.setDeviceContactType(contactType.getValue());
+        } else {
+            contact.setContactType(contactType.getValue());
         }
         baseContactService.upsert(contact);
     }
@@ -302,5 +327,19 @@ public class UserService {
         } else {
             userPreference.setApplicationInfoCallDone(false);
         }
+    }
+
+    public void processContactSync() {
+        Set<String> userIds = new HashSet<String>();
+        SyncApiResponse apiResponse = syncClientService.getSyncCall(MobiComUserPreference.getInstance(context).getContactSyncTime(), SyncClientService.SyncType.CONTACT);
+        if (apiResponse == null || apiResponse.getResponse() == null || apiResponse.getResponse().isEmpty()) {
+            Utils.printLog(context, TAG, "Contact Sync call response is empty.");
+            return;
+        }
+        for (SyncPxy syncPxy : apiResponse.getResponse()) {
+            userIds.add(syncPxy.getParam());
+        }
+        processUserDetails(userIds);
+        MobiComUserPreference.getInstance(context).setContactSyncTime(apiResponse.getGeneratedAt());
     }
 }

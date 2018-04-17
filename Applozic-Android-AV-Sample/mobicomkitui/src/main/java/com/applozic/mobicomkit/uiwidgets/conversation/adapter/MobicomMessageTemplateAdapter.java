@@ -10,6 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.applozic.mobicomkit.ApplozicClient;
 import com.applozic.mobicomkit.uiwidgets.R;
 import com.applozic.mobicomkit.uiwidgets.conversation.MobicomMessageTemplate;
 
@@ -27,11 +28,20 @@ public class MobicomMessageTemplateAdapter extends RecyclerView.Adapter<MobicomM
     private MessageTemplateDataListener listener;
     private List<String> messageList;
     private Map<String, String> messageMap;
+    private Context context;
 
-    public MobicomMessageTemplateAdapter(MobicomMessageTemplate messageTemplate) {
+    public MobicomMessageTemplateAdapter(Context context, MobicomMessageTemplate messageTemplate) {
         this.messageTemplate = messageTemplate;
-        this.messageList = new ArrayList<>(messageTemplate.getMessages().keySet());
-        this.messageMap = messageTemplate.getMessages();
+        messageMap = messageTemplate.getMessages();
+        Map<String, String> tempMap = ApplozicClient.getInstance(context).getMessageTemplates();
+
+        if (tempMap != null && !tempMap.isEmpty()) {
+            messageMap.putAll(tempMap);
+        }
+
+        messageList = new ArrayList<>(messageMap.keySet());
+
+        this.context = context;
     }
 
     @Override
@@ -61,8 +71,14 @@ public class MobicomMessageTemplateAdapter extends RecyclerView.Adapter<MobicomM
     }
 
     public void setMessageList(Map<String, String> messageList) {
-        this.messageMap = messageList;
-        this.messageList = new ArrayList<>(messageList.keySet());
+        Map<String, String> tempMap = ApplozicClient.getInstance(context).getMessageTemplates();
+        messageMap = messageList;
+
+        if (tempMap != null && !tempMap.isEmpty()) {
+            messageMap.putAll(tempMap);
+        }
+
+        this.messageList = new ArrayList<>(messageMap.keySet());
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {
@@ -94,5 +110,10 @@ public class MobicomMessageTemplateAdapter extends RecyclerView.Adapter<MobicomM
 
     public interface MessageTemplateDataListener {
         void onItemSelected(String messsage);
+    }
+
+    public void removeTemplates() {
+        messageList.clear();
+        notifyDataSetChanged();
     }
 }

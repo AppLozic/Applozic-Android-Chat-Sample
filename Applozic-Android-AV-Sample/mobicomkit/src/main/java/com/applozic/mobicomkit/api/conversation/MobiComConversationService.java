@@ -122,14 +122,18 @@ public class MobiComConversationService {
         return getLatestMessagesGroupByPeople(null, null);
     }
 
-    public synchronized List<Message> getLatestMessagesGroupByPeople(Long createdAt, String searchString) {
+    public synchronized List<Message> getLatestMessagesGroupByPeople(Long createdAt, String searchString, Integer parentGroupKey) {
         boolean emptyTable = messageDatabaseService.isMessageTableEmpty();
 
         if (emptyTable || createdAt != null && createdAt != 0) {
             getMessages(null, createdAt, null, null, null, false);
         }
 
-        return messageDatabaseService.getMessages(createdAt, searchString);
+        return messageDatabaseService.getMessages(createdAt, searchString, parentGroupKey);
+    }
+
+    public synchronized List<Message> getLatestMessagesGroupByPeople(Long createdAt, String searchString) {
+      return getLatestMessagesGroupByPeople(createdAt,searchString,null);
     }
 
     public List<Message> getMessages(String userId, Long startTime, Long endTime) {

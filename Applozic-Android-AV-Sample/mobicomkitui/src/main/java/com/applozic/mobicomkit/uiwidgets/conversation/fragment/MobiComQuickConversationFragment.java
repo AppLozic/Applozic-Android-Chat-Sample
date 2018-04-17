@@ -22,11 +22,13 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.applozic.mobicomkit.ApplozicClient;
 import com.applozic.mobicomkit.api.account.user.MobiComUserPreference;
 import com.applozic.mobicomkit.api.conversation.Message;
 import com.applozic.mobicomkit.api.conversation.SyncCallService;
 import com.applozic.mobicomkit.api.conversation.database.MessageDatabaseService;
 import com.applozic.mobicomkit.broadcast.BroadcastService;
+import com.applozic.mobicomkit.channel.service.ChannelService;
 import com.applozic.mobicomkit.contact.AppContactService;
 import com.applozic.mobicomkit.contact.BaseContactService;
 import com.applozic.mobicomkit.uiwidgets.AlCustomizationSettings;
@@ -46,6 +48,7 @@ import com.applozic.mobicommons.commons.core.utils.Utils;
 import com.applozic.mobicommons.file.FileUtils;
 import com.applozic.mobicommons.json.GsonUtils;
 import com.applozic.mobicommons.people.SearchListFragment;
+import com.applozic.mobicommons.people.channel.Channel;
 import com.applozic.mobicommons.people.contact.Contact;
 
 import java.lang.ref.WeakReference;
@@ -226,6 +229,13 @@ public class MobiComQuickConversationFragment extends Fragment implements Search
     public void addMessage(final Message message) {
         if (this.getActivity() == null) {
             return;
+        }
+
+        if(ApplozicClient.getInstance(getActivity()).isSubGroupEnabled() && MobiComUserPreference.getInstance(getActivity()).getParentGroupKey() != null ){
+            Channel  channel = ChannelService.getInstance(getActivity()).getChannelByChannelKey(message.getGroupId());
+            if(channel != null && channel.getParentKey() != null && !MobiComUserPreference.getInstance(getActivity()).getParentGroupKey().equals(channel.getParentKey())){
+                return;
+            }
         }
 
         final Context context = getActivity();
@@ -755,7 +765,7 @@ public class MobiComQuickConversationFragment extends Fragment implements Search
 
         protected Long doInBackground(Void... voids) {
             if (initial) {
-                nextMessageList = syncCallService.getLatestMessagesGroupByPeople(searchString);
+                nextMessageList = syncCallService.getLatestMessagesGroupByPeople(searchString, MobiComUserPreference.getInstance(context).getParentGroupKey());
                 if (!nextMessageList.isEmpty()) {
                     minCreatedAtTime = nextMessageList.get(nextMessageList.size() - 1).getCreatedAtTime();
                 }
@@ -768,7 +778,7 @@ public class MobiComQuickConversationFragment extends Fragment implements Search
                     createdAt = messageList.isEmpty() ? null : messageList.get(messageList.size() - 1).getCreatedAtTime();
                 }
                 minCreatedAtTime = (minCreatedAtTime == null ? createdAt : Math.min(minCreatedAtTime, createdAt));
-                nextMessageList = syncCallService.getLatestMessagesGroupByPeople(minCreatedAtTime, searchString);
+                nextMessageList = syncCallService.getLatestMessagesGroupByPeople(minCreatedAtTime, searchString, MobiComUserPreference.getInstance(context).getParentGroupKey());
             }
 
             return 0L;

@@ -477,6 +477,18 @@
         android:layout_gravity="bottom"
         android:visibility="gone" />
 
+    <TextView
+        android:id="@+id/txtPoweredByApplozic"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/applozic_theme_color_accent"
+        android:gravity="center"
+        android:padding="7dp"
+        android:text="@string/powered_by_applozic"
+        android:textColor="@android:color/white"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
     <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

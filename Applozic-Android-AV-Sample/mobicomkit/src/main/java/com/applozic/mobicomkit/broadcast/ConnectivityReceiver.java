@@ -29,7 +29,13 @@ public class ConnectivityReceiver extends BroadcastReceiver {
         LocalBroadcastManager.getInstance(context).sendBroadcast(new Intent(action));
         Utils.printLog(context, TAG, action);
 
-        if (action.equalsIgnoreCase(CONNECTIVITY_CHANGE) || action.equalsIgnoreCase(BOOT_COMPLETED)) {
+        if(BOOT_COMPLETED.equalsIgnoreCase(action)){
+            Intent connectivityIntent = new Intent(context, ApplozicIntentService.class);
+            connectivityIntent.putExtra(ApplozicIntentService.AL_SYNC_ON_CONNECTIVITY, true);
+            ApplozicIntentService.enqueueWork(context,connectivityIntent);
+        }
+
+        if (CONNECTIVITY_CHANGE.equalsIgnoreCase(action)) {
             if (!Utils.isInternetAvailable(context)) {
                 firstConnect = true;
                 return;

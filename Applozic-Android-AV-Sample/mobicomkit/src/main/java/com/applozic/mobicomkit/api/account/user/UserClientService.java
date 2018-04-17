@@ -589,4 +589,51 @@ public class UserClientService extends MobiComKitClientService {
         }
         return null;
     }
+
+    public String postUserDetailsByContactNos(Set<String> phoneNos) {
+        try {
+            if (phoneNos != null && phoneNos.size() > 0) {
+                List<String> phoneNumberList = new ArrayList<>();
+                String response = "";
+                int count = 0;
+                for (String phoneNo : phoneNos) {
+                    count++;
+                    phoneNumberList.add(phoneNo);
+                    if( count% BATCH_SIZE==0){
+                        UserDetailListFeed userDetailListFeed = new UserDetailListFeed();
+                        userDetailListFeed.setContactSync(true);
+                        userDetailListFeed.setPhoneNumberList(phoneNumberList);
+                        String jsonFromObject = GsonUtils.getJsonFromObject(userDetailListFeed, userDetailListFeed.getClass());
+                        Log.i(TAG,"Sending json:" + jsonFromObject);
+                        response = httpRequestUtils.postData( getUserDetailsListPostUrl() + "?contactSync=true", "application/json", "application/json", jsonFromObject);
+                        phoneNumberList =  new ArrayList<String>();
+                        if(!TextUtils.isEmpty(response)){
+                            UserService.getInstance(context).processUserDetailsResponse(response);
+                        }
+                    }
+                }
+                if(!phoneNumberList.isEmpty()&& phoneNumberList.size()>0) {
+                    UserDetailListFeed userDetailListFeed = new UserDetailListFeed();
+                    userDetailListFeed.setContactSync(true);
+                    userDetailListFeed.setPhoneNumberList(phoneNumberList);
+                    String jsonFromObject = GsonUtils.getJsonFromObject(userDetailListFeed, userDetailListFeed.getClass());
+                    response = httpRequestUtils.postData( getUserDetailsListPostUrl() + "?contactSync=true", "application/json", "application/json", jsonFromObject);
+
+                    Log.i(TAG, "User details response is :" + response);
+                    if (TextUtils.isEmpty(response) || response.contains("<html>")) {
+                        return null;
+                    }
+
+                    if (!TextUtils.isEmpty(response)) {
+                        UserService.getInstance(context).processUserDetailsResponse(response);
+                    }
+                }
+                return response;
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 }

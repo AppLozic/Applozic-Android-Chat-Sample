@@ -53,4 +53,6 @@ public interface BaseContactService {
     int getGroupConversationCount();
 
     void updateLocalImageUri(Contact contact);
+
+    List<Contact> getContacts(Contact.ContactType contactType);
 }

@@ -68,6 +68,10 @@ public class MobiComUserPreference {
     private static String last_sync_time_for_metadata_update = "lastSyncTimeForMetadataUpdate";
     private static String START_TIME_FOR_MESSAGE_LIST_SCROLL = "startTimeForMessageListScroll";
     private static String USER_ROLE_TYPE = "userRoleType";
+    private static String sync_contacts = "sync_contacts";
+    private static String contact_sync_time = "contact_sync_time";
+    private static String device_contact_sync_time = "device_contact_sync_time";
+    private static String PARENT_GROUP_KEY = "PARENT_GROUP_KEY";
 
     private static SharedPreferences sharedPreferences;
     private Context context;
@@ -759,5 +763,57 @@ public class MobiComUserPreference {
             return Short.valueOf((short) sharedPreferences.getInt(USER_ROLE_TYPE, 0));
         }
         return 0;
+    }
+
+    public boolean isSyncRequired() {
+        if (sharedPreferences != null) {
+            return sharedPreferences.getBoolean(sync_contacts, false);
+        }
+        return false;
+    }
+
+
+    public void setSyncContacts(boolean syncConatcts) {
+        if (sharedPreferences != null) {
+            sharedPreferences.edit().putBoolean(sync_contacts, syncConatcts).commit();
+        }
+    }
+
+
+    public long getDeviceContactSyncTime() {
+        if (sharedPreferences != null) {
+            return sharedPreferences.getLong(device_contact_sync_time, 0);
+        }
+        return 0;
+    }
+
+
+    public void setDeviceContactSyncTime(long contactSyncTime) {
+        if (sharedPreferences != null) {
+            sharedPreferences.edit().putLong(device_contact_sync_time, contactSyncTime).commit();
+        }
+    }
+
+
+    public long getContactSyncTime() {
+        if (sharedPreferences != null) {
+            return sharedPreferences.getLong(contact_sync_time, 0);
+        }
+        return 0;
+    }
+
+
+    public void setContactSyncTime(long contactSyncTime) {
+        if (sharedPreferences != null) {
+            sharedPreferences.edit().putLong(contact_sync_time, contactSyncTime).commit();
+        }
+    }
+
+    public Integer getParentGroupKey() {
+        return sharedPreferences.getInt(PARENT_GROUP_KEY, 0);
+    }
+
+    public void setParentGroupKey(Integer parentGroupKey) {
+        sharedPreferences.edit().putInt(PARENT_GROUP_KEY, parentGroupKey).commit();
     }
 }

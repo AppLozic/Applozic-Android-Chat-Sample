@@ -73,7 +73,9 @@ public class MessageListTask extends AsyncTask<Void, Void, List<Message>> {
                         messages.add(message);
                     }
                 }
-                MobiComUserPreference.getInstance(context.get()).setStartTimeForPagination(messageList.get(messageList.size() - 1).getCreatedAtTime());
+                if (!messageList.isEmpty()) {
+                    MobiComUserPreference.getInstance(context.get()).setStartTimeForPagination(messageList.get(messageList.size() - 1).getCreatedAtTime());
+                }
             }
         }
         if (handler != null) {

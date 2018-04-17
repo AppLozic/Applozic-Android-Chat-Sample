@@ -5,13 +5,12 @@
   "sendButtonBackgroundColor": "#FF03A9F4",
   "attachmentIconsBackgroundColor": "#FF03A9F4",
   "channelCustomMessageBgColor": "#cccccc",
-
-  "sentContactMessageTextColor:": "#FFFFFFFF",
-  "receivedContactMessageTextColor": "#000000",
+  "sentContactMessageTextColor:": "#5fba7d",
+  "receivedContactMessageTextColor": "#5fba7d",
   "sentMessageTextColor": "#FFFFFFFF",
   "receivedMessageTextColor": "#000000",
   "messageEditTextTextColor": "#000000",
-  "sentMessageLinkTextColor": "#5fba7d",
+  "sentMessageLinkTextColor": "#FFFFFFFF",
   "receivedMessageLinkTextColor": "#5fba7d",
   "messageEditTextHintTextColor": "#bdbdbd",
   "noConversationLabelTextColor": "#000000",
@@ -19,11 +18,18 @@
   "conversationDayTextColor": "#333333",
   "messageTimeTextColor": "#838b83",
   "channelCustomMessageTextColor": "#666666",
-
   "sentMessageBorderColor": "#FF03A9F4",
   "receivedMessageBorderColor": "#FFFFFFFF",
   "channelCustomMessageBorderColor": "#cccccc",
-
+  "collapsingToolbarLayoutColor": "#FF03A9F4",
+  "groupParticipantsTextColor": "#FF03A9F4",
+  "groupDeleteButtonBackgroundColor": "#FF03A9F4",
+  "groupExitButtonBackgroundColor": "#FF03A9F4",
+  "adminTextColor": "#FF03A9F4",
+  "attachCameraIconName": "applozic_ic_action_camera_new",
+  "adminBackgroundColor": "#FFFFFFFF",
+  "adminBorderColor": "#FF03A9F4",
+  "userNotAbleToChatTextColor": "#000000",
   "audioPermissionNotFoundMsg": "",
   "noConversationLabel": "You have no conversations",
   "noSearchFoundForChatMessages": "No conversation found",
@@ -31,7 +37,7 @@
   "maxAttachmentAllowed": 10,
   "maxAttachmentSizeAllowed": 30,
   "totalOnlineUsers": 0,
-
+  "defaultGroupType": 2,
   "conversationContactImageVisibility": false,
   "locationShareViaMap": true,
   "startNewFloatingButton": false,
@@ -51,5 +57,93 @@
   "hideGroupExitButton": false,
   "hideGroupRemoveMemberOption": false,
   "profileOption": false,
-  "broadcastOption":true
+  "broadcastOption": true,
+  "restrictedWordMessage": " Please don't use restricted word",
+  "hideAttachmentButton": false,
+  "groupUsersOnlineStatus": false,
+  "launchChatFromProfilePicOrName": false,
+  "refreshOption": true,
+  "deleteOption": true,
+  "blockOption": true,
+  "muteOption": true,
+  "muteUserChatOption": true,
+  "replyOption": true,
+  "logoutOption": false,
+  "showAllDeviceContacts": true,
+  "poweredByApplozic": false,
+  "logoutPackageName": "",
+  "groupDeletePackageName": "",
+  "attachmentOptions": {
+    ":location": true,
+    ":camera": true,
+    ":file": true,
+    ":audio": true,
+    ":video": true,
+    ":contact": true
+  },
+  "editTextHintText:": "Write a Message..",
+  "replyMessageLayoutSentMessageBackground": "#C0C0C0",
+  "replyMessageLayoutReceivedMessageBackground": "#F5F5F5",
+  "groupInfoScreenVisible": true,
+  "forwardOption": true,
+  "recordButton": true,
+  "messageTemplate": {
+    "isEnabled": false,
+    "borderColor": "#FF03A9F4",
+    "backgroundColor": "#FFFFFF",
+    "hideOnSend": false,
+    "sendMessageOnClick": true,
+    "cornerRadius": 12,
+    "textColor": "#FF03A9F4",
+    "messageList": {
+      "Greetings": "Hey",
+      "Help?": "How may I help you?",
+      "Email-Id": "May I know your emailId",
+      "Company": "May I know your company name?",
+      "Platform?": "Is this related to Android, iOS, or web?",
+      "Doc?": "Did you follow our doc?"
+    },
+    "textMessageList": {
+      "showOnSenderSide": false,
+      "showOnReceiverSide": false,
+      "sendMessageOnClick": false,
+      "messageList": {
+      }
+    },
+    "imageMessageList": {
+      "showOnSenderSide": false,
+      "sendMessageOnClick": false,
+      "showOnReceiverSide": false,
+      "messageList": {
+      }
+    },
+    "videoMessageList": {
+      "showOnSenderSide": false,
+      "sendMessageOnClick": false,
+      "showOnReceiverSide": false,
+      "messageList": {
+      }
+    },
+    "audioMessageList": {
+      "showOnSenderSide": false,
+      "sendMessageOnClick": false,
+      "showOnReceiverSide": false,
+      "messageList": {
+      }
+    },
+    "locationMessageList": {
+      "showOnSenderSide": false,
+      "sendMessageOnClick": false,
+      "showOnReceiverSide": false,
+      "messageList": {
+      }
+    },
+    "contactMessageList": {
+      "showOnSenderSide": false,
+      "sendMessageOnClick": false,
+      "showOnReceiverSide": false,
+      "messageList": {
+      }
+    }
+  }
 }

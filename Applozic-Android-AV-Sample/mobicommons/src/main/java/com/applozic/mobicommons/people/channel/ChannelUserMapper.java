@@ -12,6 +12,7 @@ public class ChannelUserMapper extends JsonMarker {
     private short status;
     private int unreadCount;
     private Integer role;
+    private Integer parentKey;
 
     public ChannelUserMapper() {
     }
@@ -67,6 +68,13 @@ public class ChannelUserMapper extends JsonMarker {
         this.role = role;
     }
 
+    public Integer getParentKey() {
+        return parentKey;
+    }
+
+    public void setParentKey(Integer parentKey) {
+        this.parentKey = parentKey;
+    }
     public enum UserRole {
         ADMIN(1),
         MODERATOR(2),
@@ -89,6 +97,7 @@ public class ChannelUserMapper extends JsonMarker {
                 ", status=" + status +
                 ", unreadCount=" + unreadCount +
                 ", role=" + role +
+                ", parentKey=" + parentKey +
                 '}';
     }
 }

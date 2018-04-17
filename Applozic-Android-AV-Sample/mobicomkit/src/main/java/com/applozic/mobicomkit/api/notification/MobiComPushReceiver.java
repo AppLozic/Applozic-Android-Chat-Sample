@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.applozic.mobicomkit.ApplozicClient;
 import com.applozic.mobicomkit.api.account.user.MobiComUserPreference;
 import com.applozic.mobicomkit.api.conversation.Message;
 import com.applozic.mobicomkit.api.conversation.MobiComConversationService;
@@ -15,6 +16,7 @@ import com.applozic.mobicomkit.broadcast.BroadcastService;
 import com.applozic.mobicomkit.feed.InstantMessageResponse;
 import com.applozic.mobicomkit.feed.GcmMessageResponse;
 import com.applozic.mobicomkit.feed.MqttMessageResponse;
+import com.applozic.mobicommons.commons.core.utils.Utils;
 import com.applozic.mobicommons.json.GsonUtils;
 
 import java.util.ArrayList;
@@ -160,7 +162,7 @@ MobiComPushReceiver {
                     messageSent = null, deleteConversationForContact = null, deleteConversationForChannel = null,
                     deleteMessage = null, conversationReadResponse = null,
                     userBlockedResponse = null, userUnBlockedResponse = null, conversationReadForContact = null, conversationReadForChannel = null, conversationReadForSingleMessage = null,
-                    userDetailChanged = null, userDeleteNotification = null, messageMetadataUpdate = null, mutedUserListResponse = null;
+                    userDetailChanged = null, userDeleteNotification = null, messageMetadataUpdate = null, mutedUserListResponse = null, contactSync = null;
             SyncCallService syncCallService = SyncCallService.getInstance(context);
 
             if (bundle != null) {
@@ -182,6 +184,7 @@ MobiComPushReceiver {
                 userDeleteNotification = bundle.getString(notificationKeyList.get(31));
                 messageMetadataUpdate = bundle.getString(notificationKeyList.get(30));
                 mutedUserListResponse = bundle.getString(notificationKeyList.get(32));
+                contactSync = bundle.getString(notificationKeyList.get(25));
             } else if (data != null) {
                 deleteConversationForContact = data.get(notificationKeyList.get(5));
                 deleteMessage = data.get(notificationKeyList.get(4));
@@ -201,6 +204,7 @@ MobiComPushReceiver {
                 userDeleteNotification = data.get(notificationKeyList.get(31));
                 messageMetadataUpdate = data.get(notificationKeyList.get(30));
                 mutedUserListResponse = data.get(notificationKeyList.get(32));
+                contactSync = data.get(notificationKeyList.get(25));
             }
 
             if (!TextUtils.isEmpty(payloadForDelivered)) {
@@ -403,6 +407,15 @@ MobiComPushReceiver {
                 }
 
                 syncCallService.syncMessageMetadataUpdate(keyString, true);
+            }
+
+            if (ApplozicClient.getInstance(context).isDeviceContactSync() && !TextUtils.isEmpty(contactSync)) {
+                MqttMessageResponse mqttMessageResponse = (MqttMessageResponse) GsonUtils.getObjectFromJson(contactSync, MqttMessageResponse.class);
+                if (processPushNotificationId(mqttMessageResponse.getId())) {
+                    return;
+                }
+                addPushNotificationId(mqttMessageResponse.getId());
+                syncCallService.processContactSync(mqttMessageResponse.getMessage().toString());
             }
 
             if (!TextUtils.isEmpty(mutedUserListResponse)) {

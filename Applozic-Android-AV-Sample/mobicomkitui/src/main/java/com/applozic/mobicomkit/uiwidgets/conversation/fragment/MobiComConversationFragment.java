@@ -71,6 +71,7 @@ import android.widget.Toast;
 import com.applozic.mobicomkit.ApplozicClient;
 import com.applozic.mobicomkit.api.MobiComKitConstants;
 import com.applozic.mobicomkit.api.account.user.MobiComUserPreference;
+import com.applozic.mobicomkit.api.account.user.User;
 import com.applozic.mobicomkit.api.account.user.UserBlockTask;
 import com.applozic.mobicomkit.api.attachment.AttachmentView;
 import com.applozic.mobicomkit.api.attachment.FileClientService;
@@ -353,6 +354,11 @@ abstract public class MobiComConversationFragment extends Fragment implements Vi
 
             }
         }
+
+        if (alCustomizationSettings.isPoweredByApplozic()) {
+            list.findViewById(R.id.txtPoweredByApplozic).setVisibility(VISIBLE);
+        }
+        
         extendedSendingOptionLayout = (LinearLayout) list.findViewById(R.id.extended_sending_option_layout);
 
         attachmentLayout = (RelativeLayout) list.findViewById(R.id.attachment_layout);
@@ -759,6 +765,11 @@ abstract public class MobiComConversationFragment extends Fragment implements Vi
             public void onClick(View v) {
 
                 if (channel != null) {
+
+                    if (Channel.GroupType.SUPPORT_GROUP.getValue().equals(channel.getType())
+                            && User.RoleType.USER_ROLE.getValue().equals(MobiComUserPreference.getInstance(getContext()).getUserRoleType())) {
+                        return;
+                    }
                     if (channel.isDeleted()) {
                         return;
                     }
@@ -804,7 +815,7 @@ abstract public class MobiComConversationFragment extends Fragment implements Vi
         messageTemplate = alCustomizationSettings.getMessageTemplate();
 
         if (messageTemplate != null && messageTemplate.isEnabled()) {
-            templateAdapter = new MobicomMessageTemplateAdapter(messageTemplate);
+            templateAdapter = new MobicomMessageTemplateAdapter(getContext(), messageTemplate);
             MobicomMessageTemplateAdapter.MessageTemplateDataListener listener = new MobicomMessageTemplateAdapter.MessageTemplateDataListener() {
                 @Override
                 public void onItemSelected(String message) {
@@ -825,8 +836,7 @@ abstract public class MobiComConversationFragment extends Fragment implements Vi
                         AlMessageMetadataUpdateTask.MessageMetadataListener listener1 = new AlMessageMetadataUpdateTask.MessageMetadataListener() {
                             @Override
                             public void onSuccess(Context context, String message) {
-                                templateAdapter.setMessageList(new HashMap<String, String>());
-                                templateAdapter.notifyDataSetChanged();
+                                templateAdapter.removeTemplates();
                             }
 
                             @Override
@@ -1173,10 +1183,13 @@ abstract public class MobiComConversationFragment extends Fragment implements Vi
         }
         if (i != -1) {
             messageList.get(i).setMetadata(messageDatabaseService.getMessage(keyString).getMetadata());
-            conversationAdapter.notifyDataSetChanged();
+            if (conversationAdapter != null) {
+                conversationAdapter.notifyDataSetChanged();
+            }
             if (messageList.get(messageList.size() - 1).getMetadata().containsKey("isDoneWithClicking")) {
-                templateAdapter.setMessageList(new HashMap<String, String>());
-                templateAdapter.notifyDataSetChanged();
+                if (templateAdapter != null) {
+                    templateAdapter.notifyDataSetChanged();
+                }
             }
         }
     }
@@ -1830,8 +1843,7 @@ abstract public class MobiComConversationFragment extends Fragment implements Vi
         this.channel = channel;
         if (channel != null && !ChannelService.getInstance(getContext()).isUserAlreadyPresentInChannel(channel.getKey(), MobiComUserPreference.getInstance(getContext()).getUserId())
                 && messageTemplate != null && messageTemplate.isEnabled() && templateAdapter != null) {
-            templateAdapter.setMessageList(new HashMap<String, String>());
-            templateAdapter.notifyDataSetChanged();
+            templateAdapter.removeTemplates();
         }
     }
 
@@ -2262,6 +2274,9 @@ abstract public class MobiComConversationFragment extends Fragment implements Vi
         } else {
             messageToSend.setContentType(messageContentType);
         }
+        if (messageMetaData == null) {
+            messageMetaData = new HashMap<>();
+        }
         messageToSend.setFileMetaKeyStrings(fileMetaKeyStrings);
         messageToSend.setFileMetas(fileMetas);
         if (!TextUtils.isEmpty(ApplozicClient.getInstance(getActivity()).getMessageMetaData())) {
@@ -2270,13 +2285,20 @@ abstract public class MobiComConversationFragment extends Fragment implements Vi
             Map<String, String> messageMetaDataMap = null;
             try {
                 messageMetaDataMap = new Gson().fromJson(ApplozicClient.getInstance(getActivity()).getMessageMetaData(), mapType);
-                messageToSend.setMetadata(messageMetaDataMap);
+                if (messageMetaDataMap != null && !messageMetaDataMap.isEmpty()) {
+                    messageMetaData.putAll(messageMetaDataMap);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        } else {
-            messageToSend.setMetadata(this.messageMetaData);
         }
+
+        if (this.messageMetaData != null && !this.messageMetaData.isEmpty()) {
+            messageMetaData.putAll(this.messageMetaData);
+        }
+
+        messageToSend.setMetadata(messageMetaData);
+
 
         conversationService.sendMessage(messageToSend, messageIntentClass);
         if (replayRelativeLayout != null) {
@@ -2634,7 +2656,7 @@ abstract public class MobiComConversationFragment extends Fragment implements Vi
         BroadcastService.currentUserId = null;
         BroadcastService.currentConversationId = null;
         if (typingStarted) {
-            if (contact != null | channel != null && !Channel.GroupType.OPEN.getValue().equals(channel.getType()) || contact != null) {
+            if (contact != null || (channel != null && !Channel.GroupType.OPEN.getValue().equals(channel.getType()))) {
                 Intent intent = new Intent(getActivity(), ApplozicMqttIntentService.class);
                 intent.putExtra(ApplozicMqttIntentService.CHANNEL, channel);
                 intent.putExtra(ApplozicMqttIntentService.CONTACT, contact);
@@ -3014,8 +3036,7 @@ abstract public class MobiComConversationFragment extends Fragment implements Vi
                 userNotAbleToChatTextView.setText(R.string.group_has_been_deleted_text);
                 if (channel != null && !ChannelService.getInstance(getContext()).isUserAlreadyPresentInChannel(channel.getKey(), MobiComUserPreference.getInstance(getContext()).getUserId())
                         && messageTemplate != null && messageTemplate.isEnabled() && templateAdapter != null) {
-                    templateAdapter.setMessageList(new HashMap<String, String>());
-                    templateAdapter.notifyDataSetChanged();
+                    templateAdapter.removeTemplates();
                 }
             } else {
                 if ((!ChannelService.getInstance(getActivity()).processIsUserPresentInChannel(channel.getKey())
@@ -3025,8 +3046,7 @@ abstract public class MobiComConversationFragment extends Fragment implements Vi
                     individualMessageSendLayout.setVisibility(View.GONE);
                     userNotAbleToChatLayout.setVisibility(VISIBLE);
                     if (messageTemplate != null && messageTemplate.isEnabled() && templateAdapter != null) {
-                        templateAdapter.setMessageList(new HashMap<String, String>());
-                        templateAdapter.notifyDataSetChanged();
+                        templateAdapter.removeTemplates();
                     }
                 } else if (ChannelService.getInstance(getActivity()).processIsUserPresentInChannel(channel.getKey())
                         && userNotAbleToChatLayout != null

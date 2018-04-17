@@ -185,7 +185,7 @@ public class ContactSelectionFragment extends ListFragment implements SearchList
             } else if (groupContacts != null) {
                 getLoaderManager().initLoader(ContactsQuery.QUERY_ID, null, ContactSelectionFragment.this);
             }
-        }else if (MobiComUserPreference.getInstance(getContext()).getContactGroupIdList() != null && !MobiComUserPreference.getInstance(getContext()).getContactGroupIdList().isEmpty()) {
+        } else if (MobiComUserPreference.getInstance(getContext()).getContactGroupIdList() != null && !MobiComUserPreference.getInstance(getContext()).getContactGroupIdList().isEmpty()) {
             List<String> groupList = new ArrayList<String>();
             groupList.addAll(MobiComUserPreference.getInstance(getContext()).getContactGroupIdList());
 
@@ -239,56 +239,7 @@ public class ContactSelectionFragment extends ListFragment implements SearchList
         super.onActivityCreated(savedInstanceState);
         setListAdapter(mAdapter);
         getListView().setOnItemClickListener(this);
-        getListView().setOnScrollListener(new AbsListView.OnScrollListener() {
-            @Override
-            public void onScrollStateChanged(AbsListView absListView, int scrollState) {
-                // Pause image loader to ensure smoother scrolling when flinging
-                if (scrollState == AbsListView.OnScrollListener.SCROLL_STATE_FLING) {
-                    mImageLoader.setPauseWork(true);
-                    Utils.toggleSoftKeyBoard(getActivity(), true);
-                } else {
-                    mImageLoader.setPauseWork(false);
-                }
-            }
-
-            @Override
-            public void onScroll(AbsListView absListView, int firstVisibleItem, int visibleItemCount, int totalItemsCount) {
-                if ((alCustomizationSettings.isRegisteredUserContactListCall() || ApplozicSetting.getInstance(getActivity()).isRegisteredUsersContactCall()) && Utils.isInternetAvailable(getActivity().getApplicationContext()) && TextUtils.isEmpty(userPreference.getContactsGroupId()) && userPreference.getContactGroupIdList() == null) {
-
-                    if (totalItemsCount < previousTotalItemCount) {
-                        currentPage = startingPageIndex;
-                        previousTotalItemCount = totalItemsCount;
-                        if (totalItemsCount == 0) {
-                            loading = true;
-                        } else {
-                            loading = false;
-
-                        }
-                    }
-
-                    if (loading && (totalItemsCount > previousTotalItemCount)) {
-                        loading = false;
-                        previousTotalItemCount = totalItemsCount;
-                        currentPage++;
-                    }
-
-                    if (totalItemsCount - visibleItemCount == 0) {
-                        return;
-                    }
-
-                    if (totalItemsCount <= 5) {
-                        return;
-                    }
-
-                    if (!loading && (totalItemsCount - visibleItemCount) <= (firstVisibleItem + visibleThreshold)) {
-                        if (!ContactSelectionActivity.isSearching) {
-                            loading = true;
-                            processDownloadRegisteredUsers();
-                        }
-                    }
-                }
-            }
-        });
+        getListView().setOnScrollListener(new EndlessScrollListener());
 
         // If there's a previously selected search item from a saved state then don't bother
         // initializing the loader as it will be restarted later when the query is populated into
@@ -296,6 +247,44 @@ public class ContactSelectionFragment extends ListFragment implements SearchList
         if (mPreviouslySelectedSearchItem == 0 && contactsGroupId == null && userPreference.getContactGroupIdList() == null) {
             // Initialize the loader, and create a loader identified by ContactsQuery.QUERY_ID
             getLoaderManager().initLoader(ContactsQuery.QUERY_ID, null, this);
+        }
+    }
+
+    public class EndlessScrollListener implements AbsListView.OnScrollListener {
+
+        private int visibleThreshold = 5;
+        private int currentPage = 0;
+        private int previousTotal = 0;
+        private boolean loading = true;
+
+        public EndlessScrollListener() {
+        }
+
+        public EndlessScrollListener(int visibleThreshold) {
+            this.visibleThreshold = visibleThreshold;
+        }
+
+        @Override
+        public void onScroll(AbsListView view, int firstVisibleItem,
+                             int visibleItemCount, int totalItemCount) {
+            if (loading &&
+                    ((alCustomizationSettings.isRegisteredUserContactListCall() || ApplozicSetting.getInstance(getActivity()).isRegisteredUsersContactCall()) && Utils.isInternetAvailable(getActivity().getApplicationContext()) && TextUtils.isEmpty(userPreference.getContactsGroupId())) &&
+                    (totalItemCount > previousTotal)) {
+                loading = false;
+                previousTotal = totalItemCount;
+                currentPage++;
+
+            }
+            if ((!loading && (totalItemCount - visibleItemCount) <= (firstVisibleItem + visibleThreshold)) && (!ContactSelectionActivity.isSearching)) {
+                // I load the next page of gigs using a background task,
+                // but you can call any function here.
+                processDownloadRegisteredUsers();
+                loading = true;
+            }
+        }
+
+        @Override
+        public void onScrollStateChanged(AbsListView view, int scrollState) {
         }
     }
 
@@ -476,6 +465,11 @@ public class ContactSelectionFragment extends ListFragment implements SearchList
                     } else {
                         channelInfo.setType(groupType);
                     }
+
+                    if (MobiComUserPreference.getInstance(getActivity()).getParentGroupKey() != null && MobiComUserPreference.getInstance(getActivity()).getParentGroupKey() != 0) {
+                        channelInfo.setParentKey(MobiComUserPreference.getInstance(getActivity()).getParentGroupKey());
+                    }
+
                     AlChannelCreateAsyncTask alChannelCreateAsyncTask = new AlChannelCreateAsyncTask(getActivity(), channelInfo, taskListenerInterface);
                     alChannelCreateAsyncTask.execute((Void) null);
                 }
@@ -489,8 +483,11 @@ public class ContactSelectionFragment extends ListFragment implements SearchList
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
 
-        Loader<Cursor> loader = contactDatabase.getSearchCursorLoader(mSearchTerm, groupContacts);
-        return loader;
+        if (ApplozicClient.getInstance(getContext()).isDeviceContactSync()) {
+            return contactDatabase.getPhoneContactCursorLoader(mSearchTerm, groupContacts, false);
+        } else {
+            return contactDatabase.getSearchCursorLoader(mSearchTerm, groupContacts,MobiComUserPreference.getInstance(getActivity()).getParentGroupKey());
+        }
     }
 
     @Override
