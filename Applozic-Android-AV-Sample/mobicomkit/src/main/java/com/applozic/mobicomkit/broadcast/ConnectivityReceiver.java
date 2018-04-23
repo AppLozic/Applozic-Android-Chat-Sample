@@ -44,7 +44,7 @@ public class ConnectivityReceiver extends BroadcastReceiver {
                 return;
             }
             ConnectivityManager cm = ((ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE));
-            if (cm.getActiveNetworkInfo() != null && cm.getActiveNetworkInfo().isConnected()) {
+            if (cm != null && cm.getActiveNetworkInfo() != null && cm.getActiveNetworkInfo().isConnected()) {
                 if (firstConnect) {
                     firstConnect = false;
                     Intent connectivityIntent = new Intent(context, ApplozicIntentService.class);

@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Process;
+import android.os.SystemClock;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.Toolbar;
@@ -44,6 +45,7 @@ import com.applozic.mobicomkit.uiwidgets.conversation.activity.MobiComKitActivit
 import com.applozic.mobicomkit.uiwidgets.conversation.activity.RecyclerViewPositionHelper;
 import com.applozic.mobicomkit.uiwidgets.conversation.adapter.QuickConversationAdapter;
 import com.applozic.mobicommons.commons.core.utils.DateUtils;
+import com.applozic.mobicommons.commons.core.utils.SntpClient;
 import com.applozic.mobicommons.commons.core.utils.Utils;
 import com.applozic.mobicommons.file.FileUtils;
 import com.applozic.mobicommons.json.GsonUtils;
@@ -115,7 +117,13 @@ public class MobiComQuickConversationFragment extends Fragment implements Search
         Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
-                MobiComUserPreference.getInstance(getActivity()).setDeviceTimeOffset(DateUtils.getTimeDiffFromUtc());
+                SntpClient sntpClient = new SntpClient();
+                long diff = 0;
+                if (sntpClient.requestTime("0.africa.pool.ntp.org", 30000)) {
+                    long utcTime = sntpClient.getNtpTime() + SystemClock.elapsedRealtime() - sntpClient.getNtpTimeReference();
+                    diff = utcTime - System.currentTimeMillis();
+                    MobiComUserPreference.getInstance(getActivity()).setDeviceTimeOffset(diff);
+                }
             }
         });
         thread.setPriority(Process.THREAD_PRIORITY_BACKGROUND);

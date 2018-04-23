@@ -17,8 +17,10 @@ import com.applozic.mobicomkit.broadcast.BroadcastService;
 import com.applozic.mobicomkit.contact.AppContactService;
 import com.applozic.mobicommons.people.contact.Contact;
 
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TimeZone;
 
 /**
  * Created by devashish on 08/08/16.
@@ -35,7 +37,7 @@ public class VideoCallNotificationHelper {
     public static final String CALL_MISSED = "CALL_MISSED";
     public static final String CALL_CANCELED = "CALL_CANCELED";
     public static final String CALL_AUDIO_ONLY = "CALL_AUDIO_ONLY";
-    public static final int MAX_NOTIFICATION_RING_DURATION = 1 * 60 * 1000;
+    public static final int MAX_NOTIFICATION_RING_DURATION = 1 * 15 * 1000;
     public static final String NOTIFICATION_ACTIVITY_NAME = "com.applozic.audiovideo.activity.CallActivity";
     public static final String CALL_DURATION = "CALL_DURATION";
     private static final String TAG = "CallNotiHandler";
@@ -362,10 +364,14 @@ public class VideoCallNotificationHelper {
     private void handleIncomingVideoNotification(Message msg) {
 
         String isAudioCallOnly = msg.getMetadata().get(CALL_AUDIO_ONLY);
-        boolean staleNotification = System.currentTimeMillis() - msg.getCreatedAtTime() > MAX_NOTIFICATION_RING_DURATION;
+
+        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
+        long time = cal.getTimeInMillis();
+
+        boolean staleNotification = ((time + MobiComUserPreference.getInstance(context).getDeviceTimeOffset()) -  msg.getCreatedAtTime()) > MAX_NOTIFICATION_RING_DURATION;
         //OR SELF Connecting
 
-        if (staleNotification || msg.isTypeOutbox()) {
+       if (staleNotification || msg.isTypeOutbox()) {
 
             //Contact contact = baseContactService.getContactById(msg.getContactIds());
             //sendCallMissed(contact, msg.getMessage());
