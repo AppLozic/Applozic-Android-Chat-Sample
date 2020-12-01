@@ -41,6 +41,8 @@
 -keep class org.webrtc.** { *; }
 -keep class com.twilio.video.** { *; }
 -keep class com.twilio.common.** { *; }
+-keep class tvi.webrtc.** { *; }
+-keepattributes InnerClasses
 -dontwarn android.support.v4.**
 -keep public class com.google.android.gms.* { public *; }
 -dontwarn com.google.android.gms.**
