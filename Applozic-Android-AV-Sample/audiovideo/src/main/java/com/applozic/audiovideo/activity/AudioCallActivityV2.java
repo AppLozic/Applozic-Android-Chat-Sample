@@ -461,7 +461,7 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
          */
         if (thumbnailVideoView.getVisibility() == View.VISIBLE) {
             Snackbar.make(connectActionFab,
-                    "Multiple participants are not currently support in this UI",
+                    R.string.multiple_participants_not_available,
                     Snackbar.LENGTH_LONG)
                     .setAction("Action", null).show();
             return;
