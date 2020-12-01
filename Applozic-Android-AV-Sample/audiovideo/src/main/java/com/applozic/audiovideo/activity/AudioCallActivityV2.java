@@ -1,6 +1,7 @@
 package com.applozic.audiovideo.activity;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -44,21 +45,24 @@ import com.applozic.mobicomkit.api.conversation.MessageIntentService;
 import com.applozic.mobicomkit.api.conversation.MobiComMessageService;
 import com.applozic.mobicomkit.api.notification.VideoCallNotificationHelper;
 import com.applozic.mobicomkit.broadcast.BroadcastService;
-import com.applozic.mobicomkit.broadcast.ConnectivityReceiver;
 import com.applozic.mobicomkit.contact.AppContactService;
 import com.applozic.mobicommons.commons.core.utils.Utils;
 import com.applozic.mobicommons.commons.image.ImageLoader;
 import com.applozic.mobicommons.json.GsonUtils;
 import com.applozic.mobicommons.people.contact.Contact;
-import com.twilio.video.AudioTrack;
 import com.twilio.video.CameraCapturer;
 import com.twilio.video.ConnectOptions;
 import com.twilio.video.LocalAudioTrack;
 import com.twilio.video.LocalParticipant;
 import com.twilio.video.LocalVideoTrack;
-import com.twilio.video.Participant;
+import com.twilio.video.RemoteAudioTrack;
+import com.twilio.video.RemoteAudioTrackPublication;
+import com.twilio.video.RemoteDataTrack;
+import com.twilio.video.RemoteDataTrackPublication;
+import com.twilio.video.RemoteParticipant;
+import com.twilio.video.RemoteVideoTrack;
+import com.twilio.video.RemoteVideoTrackPublication;
 import com.twilio.video.Room;
-import com.twilio.video.RoomState;
 import com.twilio.video.TwilioException;
 import com.twilio.video.Video;
 import com.twilio.video.VideoTrack;
@@ -68,6 +72,9 @@ import java.util.Collections;
 
 import applozic.com.audiovideo.R;
 
+import static com.twilio.video.Room.State.CONNECTED;
+import static com.twilio.video.Room.State.DISCONNECTED;
+
 /**
  * Created by Adarsh on 12/15/16.
  */
@@ -76,6 +83,7 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
     public static final long IN_COMING_CALL_TIMEOUT = 30 * 1000L;
     private static final int CAMERA_MIC_PERMISSION_REQUEST_CODE = 1;
     private static final String TAG = "AudioCallActivityV2";
+    private static final String LOCAL_VIDEO_TRACK_NAME = "camera";
 
     /*
      * The Video Client allows a client to connect to a room
@@ -136,7 +144,7 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
     TextView txtCount;
     int rejectClickCount;
     private android.support.v7.app.AlertDialog alertDialog;
-    private String participantIdentity;
+    private String remoteParticipantIdentity;
     private int previousAudioMode;
     private int cnt;
     private boolean previousMicrophoneMute;
@@ -244,7 +252,7 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
                 Utils.printLog(this,TAG,"Front camera not found on device, using back camera..");
                 cameraCapturer = new CameraCapturer(this, CameraCapturer.CameraSource.BACK_CAMERA);
             }
-            localVideoTrack = LocalVideoTrack.create(this, true, cameraCapturer);
+            localVideoTrack = LocalVideoTrack.create(this, true, cameraCapturer, LOCAL_VIDEO_TRACK_NAME);
             primaryVideoView.setMirror(true);
             if (videoCall) {
                 localVideoTrack.addRenderer(primaryVideoView);
@@ -291,14 +299,14 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
         try {
             if (videoCall) {
                 if (localVideoTrack == null && checkPermissionForCameraAndMicrophone()) {
-                    localVideoTrack = LocalVideoTrack.create(this, true, cameraCapturer);
+                    localVideoTrack = LocalVideoTrack.create(this, true, cameraCapturer, LOCAL_VIDEO_TRACK_NAME);
                     localVideoTrack.addRenderer(localVideoView);
 
             /*
              * If connected to a Room then share the local video track.
              */
                     if (localParticipant != null && localVideoTrack != null) {
-                        localParticipant.addVideoTrack(localVideoTrack);
+                        localParticipant.publishTrack(localVideoTrack);
                     }
                 }
             }
@@ -320,7 +328,7 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
              * the track has been removed.
              */
             if (localParticipant != null) {
-                localParticipant.removeVideoTrack(localVideoTrack);
+                localParticipant.unpublishTrack(localVideoTrack);
             }
 
             localVideoTrack.release();
@@ -332,11 +340,11 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
     @Override
     protected void onDestroy() {
 
-           /*
+        /*
          * Always disconnect from the room before leaving the Activity to
          * ensure any memory allocated to the Room resource is freed.
          */
-        if (room != null && room.getState() != RoomState.DISCONNECTED) {
+        if (room != null && room.getState() != DISCONNECTED) {
             room.disconnect();
             disconnectedFromOnDestroy = true;
         }
@@ -444,39 +452,48 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
     }
 
     /*
-    * Called when participant joins the room
-    */
-    protected void addParticipant(Participant participant) {
+     * Called when remote participant joins the room
+     */
+    @SuppressLint("SetTextI18n")
+    private void addRemoteParticipant(RemoteParticipant remoteParticipant) {
         /*
          * This app only displays video for one additional participant per Room
          */
         if (thumbnailVideoView.getVisibility() == View.VISIBLE) {
             Snackbar.make(connectActionFab,
-                    R.string.multiple_participants_not_available,
+                    "Multiple participants are not currently support in this UI",
                     Snackbar.LENGTH_LONG)
                     .setAction("Action", null).show();
             return;
         }
         videoCallNotificationHelper.sendVideoCallAnswer(contactToCall, callId);
-        participantIdentity = participant.getIdentity();
-        videoStatusTextView.setText("Participant " + participantIdentity + " joined");
+        remoteParticipantIdentity = remoteParticipant.getIdentity();
+        videoStatusTextView.setText("Participant " + remoteParticipantIdentity + " joined");
 
         /*
-         * Add participant renderer
+         * Add remote participant renderer
          */
-        if (participant.getVideoTracks().size() > 0) {
-            addParticipantVideo(participant.getVideoTracks().get(0));
+        if (remoteParticipant.getRemoteVideoTracks().size() > 0) {
+            RemoteVideoTrackPublication remoteVideoTrackPublication =
+                    remoteParticipant.getRemoteVideoTracks().get(0);
+
+            /*
+             * Only render video tracks that are subscribed to
+             */
+            if (remoteVideoTrackPublication.isTrackSubscribed()) {
+                addRemoteParticipantVideo(remoteVideoTrackPublication.getRemoteVideoTrack());
+            }
         }
 
         /*
          * Start listening for participant events
          */
-        participant.setListener(participantListener());
+        remoteParticipant.setListener(remoteParticipantListener());
     }
 
     /*  Set primary view as renderer for participant video track
     */
-    protected void addParticipantVideo(VideoTrack videoTrack) {
+    protected void addRemoteParticipantVideo(VideoTrack videoTrack) {
         if (videoCall) {
             moveLocalVideoToThumbnailView();
             primaryVideoView.setMirror(false);
@@ -502,19 +519,28 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
     }
 
     /*
-   * Called when participant leaves the room
-   */
-    protected void removeParticipant(Participant participant) {
-        videoStatusTextView.setText("Participant " + participant.getIdentity() + " left.");
-        if (!participant.getIdentity().equals(participantIdentity)) {
+     * Called when remote participant leaves the room
+     */
+    @SuppressLint("SetTextI18n")
+    private void removeRemoteParticipant(RemoteParticipant remoteParticipant) {
+        videoStatusTextView.setText("Participant " + remoteParticipant.getIdentity() + " left.");
+        if (!remoteParticipant.getIdentity().equals(remoteParticipantIdentity)) {
             return;
         }
 
         /*
-         * Remove participant renderer
+         * Remove remote participant renderer
          */
-        if (participant.getVideoTracks().size() > 0) {
-            removeParticipantVideo(participant.getVideoTracks().get(0));
+        if (!remoteParticipant.getRemoteVideoTracks().isEmpty()) {
+            RemoteVideoTrackPublication remoteVideoTrackPublication =
+                    remoteParticipant.getRemoteVideoTracks().get(0);
+
+            /*
+             * Remove video only if subscribed to participant track
+             */
+            if (remoteVideoTrackPublication.isTrackSubscribed()) {
+                removeParticipantVideo(remoteVideoTrackPublication.getRemoteVideoTrack());
+            }
         }
         if (videoCall) {
             moveLocalVideoToPrimaryView();
@@ -522,7 +548,9 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
     }
 
     protected void removeParticipantVideo(VideoTrack videoTrack) {
-        videoTrack.removeRenderer(primaryVideoView);
+        if (videoTrack != null) {
+            videoTrack.removeRenderer(primaryVideoView);
+        }
     }
 
     protected void moveLocalVideoToPrimaryView() {
@@ -548,14 +576,14 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
     protected Room.Listener roomListener() {
         return new Room.Listener() {
             @Override
-            public void onConnected(Room room) {
+            public void onConnected(@androidx.annotation.NonNull Room room) {
                 localParticipant = room.getLocalParticipant();
                 videoStatusTextView.setText("Connected to " + room.getName());
                 Log.d(TAG, "Connected to room");
                 setTitle(room.getName());
                 setSpeakerphoneOn(videoCall);
-                for (Participant participant : room.getParticipants()) {
-                    addParticipant(participant);
+                for (RemoteParticipant participant : room.getRemoteParticipants()) {
+                    addRemoteParticipant(participant);
                     hideProgress();
                     if (!videoCall) {
                         timer.start();
@@ -565,7 +593,7 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
             }
 
             @Override
-            public void onConnectFailure(Room room, TwilioException e) {
+            public void onConnectFailure(@androidx.annotation.NonNull Room room, @androidx.annotation.NonNull TwilioException e) {
                 videoStatusTextView.setText("Failed to connect");
                 Log.d(TAG, "Failed to connect to room");
                 inviteSent = false;
@@ -573,6 +601,12 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
                 configureAudio(false);
                 finish();
             }
+
+            @Override
+            public void onReconnecting(@androidx.annotation.NonNull Room room, @androidx.annotation.NonNull TwilioException twilioException) { }
+
+            @Override
+            public void onReconnected(@androidx.annotation.NonNull Room room) { }
 
             @Override
             public void onDisconnected(Room room, TwilioException e) {
@@ -600,9 +634,9 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
             }
 
             @Override
-            public void onParticipantConnected(Room room, Participant participant) {
+            public void onParticipantConnected(@androidx.annotation.NonNull Room room, @androidx.annotation.NonNull RemoteParticipant remoteParticipant) {
                 Log.d(TAG, "onParticipantConnected for room");
-                addParticipant(participant);
+                addRemoteParticipant(remoteParticipant);
                 hideProgress();
                 if (!videoCall) {
                     timer.start();
@@ -610,12 +644,11 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
                 if (!incomingCall) {
                     callStartTime = System.currentTimeMillis();
                 }
-
             }
 
             @Override
-            public void onParticipantDisconnected(Room room, Participant participant) {
-                removeParticipant(participant);
+            public void onParticipantDisconnected(@androidx.annotation.NonNull Room room, @androidx.annotation.NonNull RemoteParticipant remoteParticipant) {
+                removeRemoteParticipant(remoteParticipant);
                 Log.d(TAG, "Participant has disconnected");
                 if (room != null) {
                     room.disconnect();
@@ -625,7 +658,7 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
             }
 
             @Override
-            public void onRecordingStarted(Room room) {
+            public void onRecordingStarted(@androidx.annotation.NonNull Room room) {
                 /*
                  * Indicates when media shared to a Room is being recorded. Note that
                  * recording is only available in our Group Rooms developer preview.
@@ -634,7 +667,7 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
             }
 
             @Override
-            public void onRecordingStopped(Room room) {
+            public void onRecordingStopped(@androidx.annotation.NonNull Room room) {
                 /*
                  * Indicates when media shared to a Room is no longer being recorded. Note that
                  * recording is only available in our Group Rooms developer preview.
@@ -644,47 +677,102 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
         };
     }
 
-    protected Participant.Listener participantListener() {
-        return new Participant.Listener() {
+    protected RemoteParticipant.Listener remoteParticipantListener() {
+        return new RemoteParticipant.Listener() {
             @Override
-            public void onAudioTrackAdded(Participant participant, AudioTrack audioTrack) {
+            public void onAudioTrackPublished(@androidx.annotation.NonNull RemoteParticipant remoteParticipant, @androidx.annotation.NonNull RemoteAudioTrackPublication remoteAudioTrackPublication) {
                 videoStatusTextView.setText("onAudioTrackAdded");
             }
 
             @Override
-            public void onAudioTrackRemoved(Participant participant, AudioTrack audioTrack) {
+            public void onAudioTrackUnpublished(@androidx.annotation.NonNull RemoteParticipant remoteParticipant, @androidx.annotation.NonNull RemoteAudioTrackPublication remoteAudioTrackPublication) {
                 videoStatusTextView.setText("onAudioTrackRemoved");
             }
 
             @Override
-            public void onVideoTrackAdded(Participant participant, VideoTrack videoTrack) {
+            public void onAudioTrackSubscribed(@androidx.annotation.NonNull RemoteParticipant remoteParticipant, @androidx.annotation.NonNull RemoteAudioTrackPublication remoteAudioTrackPublication, @androidx.annotation.NonNull RemoteAudioTrack remoteAudioTrack) {
+
+            }
+
+            @Override
+            public void onAudioTrackSubscriptionFailed(@androidx.annotation.NonNull RemoteParticipant remoteParticipant, @androidx.annotation.NonNull RemoteAudioTrackPublication remoteAudioTrackPublication, @androidx.annotation.NonNull TwilioException twilioException) {
+
+            }
+
+            @Override
+            public void onAudioTrackUnsubscribed(@androidx.annotation.NonNull RemoteParticipant remoteParticipant, @androidx.annotation.NonNull RemoteAudioTrackPublication remoteAudioTrackPublication, @androidx.annotation.NonNull RemoteAudioTrack remoteAudioTrack) {
+
+            }
+
+            @Override
+            public void onVideoTrackPublished(@androidx.annotation.NonNull RemoteParticipant remoteParticipant, @androidx.annotation.NonNull RemoteVideoTrackPublication remoteVideoTrackPublication) {
+
+            }
+
+            @Override
+            public void onVideoTrackUnpublished(@androidx.annotation.NonNull RemoteParticipant remoteParticipant, @androidx.annotation.NonNull RemoteVideoTrackPublication remoteVideoTrackPublication) {
+
+            }
+
+            @Override
+            public void onVideoTrackSubscribed(@androidx.annotation.NonNull RemoteParticipant remoteParticipant, @androidx.annotation.NonNull RemoteVideoTrackPublication remoteVideoTrackPublication, @androidx.annotation.NonNull RemoteVideoTrack remoteVideoTrack) {
                 videoStatusTextView.setText("onVideoTrackAdded");
-                addParticipantVideo(videoTrack);
+                addRemoteParticipantVideo(remoteVideoTrack);
             }
 
             @Override
-            public void onVideoTrackRemoved(Participant participant, VideoTrack videoTrack) {
+            public void onVideoTrackSubscriptionFailed(@androidx.annotation.NonNull RemoteParticipant remoteParticipant, @androidx.annotation.NonNull RemoteVideoTrackPublication remoteVideoTrackPublication, @androidx.annotation.NonNull TwilioException twilioException) {
+
+            }
+
+            @Override
+            public void onVideoTrackUnsubscribed(@androidx.annotation.NonNull RemoteParticipant remoteParticipant, @androidx.annotation.NonNull RemoteVideoTrackPublication remoteVideoTrackPublication, @androidx.annotation.NonNull RemoteVideoTrack remoteVideoTrack) {
                 videoStatusTextView.setText("onVideoTrackRemoved");
-                removeParticipantVideo(videoTrack);
+                removeParticipantVideo(remoteVideoTrack);
             }
 
             @Override
-            public void onAudioTrackEnabled(Participant participant, AudioTrack audioTrack) {
-
-            }
-
-            @Override
-            public void onAudioTrackDisabled(Participant participant, AudioTrack audioTrack) {
+            public void onDataTrackPublished(@androidx.annotation.NonNull RemoteParticipant remoteParticipant, @androidx.annotation.NonNull RemoteDataTrackPublication remoteDataTrackPublication) {
 
             }
 
             @Override
-            public void onVideoTrackEnabled(Participant participant, VideoTrack videoTrack) {
+            public void onDataTrackUnpublished(@androidx.annotation.NonNull RemoteParticipant remoteParticipant, @androidx.annotation.NonNull RemoteDataTrackPublication remoteDataTrackPublication) {
 
             }
 
             @Override
-            public void onVideoTrackDisabled(Participant participant, VideoTrack videoTrack) {
+            public void onDataTrackSubscribed(@androidx.annotation.NonNull RemoteParticipant remoteParticipant, @androidx.annotation.NonNull RemoteDataTrackPublication remoteDataTrackPublication, @androidx.annotation.NonNull RemoteDataTrack remoteDataTrack) {
+
+            }
+
+            @Override
+            public void onDataTrackSubscriptionFailed(@androidx.annotation.NonNull RemoteParticipant remoteParticipant, @androidx.annotation.NonNull RemoteDataTrackPublication remoteDataTrackPublication, @androidx.annotation.NonNull TwilioException twilioException) {
+
+            }
+
+            @Override
+            public void onDataTrackUnsubscribed(@androidx.annotation.NonNull RemoteParticipant remoteParticipant, @androidx.annotation.NonNull RemoteDataTrackPublication remoteDataTrackPublication, @androidx.annotation.NonNull RemoteDataTrack remoteDataTrack) {
+
+            }
+
+            @Override
+            public void onAudioTrackEnabled(@androidx.annotation.NonNull RemoteParticipant remoteParticipant, @androidx.annotation.NonNull RemoteAudioTrackPublication remoteAudioTrackPublication) {
+
+            }
+
+            @Override
+            public void onAudioTrackDisabled(@androidx.annotation.NonNull RemoteParticipant remoteParticipant, @androidx.annotation.NonNull RemoteAudioTrackPublication remoteAudioTrackPublication) {
+
+            }
+
+            @Override
+            public void onVideoTrackEnabled(@androidx.annotation.NonNull RemoteParticipant remoteParticipant, @androidx.annotation.NonNull RemoteVideoTrackPublication remoteVideoTrackPublication) {
+
+            }
+
+            @Override
+            public void onVideoTrackDisabled(@androidx.annotation.NonNull RemoteParticipant remoteParticipant, @androidx.annotation.NonNull RemoteVideoTrackPublication remoteVideoTrackPublication) {
 
             }
         };
@@ -695,7 +783,7 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
             @Override
             public void onClick(View v) {
                 //invite sent but NOT Yet connected,
-                if (inviteSent && participantIdentity == null) {
+                if (inviteSent && remoteParticipantIdentity == null) {
 
                     inviteSent = false;
                     videoCallNotificationHelper.sendCallMissed(contactToCall, callId);
@@ -1000,7 +1088,7 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
                 if (CONNECTIVITY_CHANGE.equals(intent.getAction())) {
                     if (!Utils.isInternetAvailable(context)) {
                         Toast.makeText(context, R.string.no_network_connectivity, Toast.LENGTH_LONG);
-                        if (room != null && room.getState().equals(RoomState.CONNECTED)) {
+                        if (room != null && room.getState().equals(CONNECTED)) {
                             room.disconnect();
                         }
                     }
@@ -1031,7 +1119,7 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
 
                     String contactId = intent.getStringExtra("CONTACT_ID");
 
-                    if (!contactId.equals(contactToCall.getUserId()) || (room != null && room.getState().equals(RoomState.CONNECTED))) {
+                    if (!contactId.equals(contactToCall.getUserId()) || (room != null && room.getState().equals(CONNECTED))) {
                         Contact contact = contactService.getContactById(contactId);
                         videoCallNotificationHelper.sendVideoCallReject(contact, incomingCallId);
                         return;
@@ -1066,7 +1154,7 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
                     @Override
                     public void run() {
                         //Check for incoming call if
-                        if (incomingCall && participantIdentity == null) {
+                        if (incomingCall && remoteParticipantIdentity == null) {
                             Toast.makeText(context, R.string.connection_error, Toast.LENGTH_LONG).show();
                             hideProgress();
                             disconnectAndExit();
@@ -1090,7 +1178,7 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
     private boolean isScheduleStopRequire() {
 
         return (inviteSent &&
-                (participantIdentity == null || !participantIdentity.equals(contactToCall.getUserId())));
+                (remoteParticipantIdentity == null || !remoteParticipantIdentity.equals(contactToCall.getUserId())));
     }
 
     protected void hideProgress() {
@@ -1115,7 +1203,7 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
     public void onBackPressed() {
 
         //Connected....ROOM
-        if (room != null && room.getState().equals(RoomState.CONNECTED)) {
+        if (room != null && room.getState().equals(CONNECTED)) {
             alertDialog = Dialog.createCloseSessionDialog(new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
@@ -1124,7 +1212,7 @@ public class AudioCallActivityV2 extends AppCompatActivity implements TokenGener
             }, closeSessionListener(), this);
             alertDialog.show();
 
-        } else if (room != null && !room.getState().equals(RoomState.CONNECTED)) {
+        } else if (room != null && !room.getState().equals(CONNECTED)) {
             //DO nothing....
         } else {
             super.onBackPressed();
